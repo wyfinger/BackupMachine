@@ -91,7 +91,7 @@ begin
  with TRegistry.Create do
    try
      RootKey := HKEY_CURRENT_USER;
-     if OpenKey ('\SOFTWARE\Microsoft\Windows\CurrentVersion\Run', true) then
+     if OpenKey('\SOFTWARE\Microsoft\Windows\CurrentVersion\Run', true) then
        if Autostart then WriteString('BackupMachine', Application.ExeName)
          else DeleteValue('BackupMachine');
      CloseKey;

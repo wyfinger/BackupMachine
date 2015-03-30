@@ -75,8 +75,8 @@ begin
  CheckAutostart(FAutostart);
 
  if FileExists(FRarPath) and
-    DirectoryExists(FFilesFolder) and
-    DirectoryExists(FArchivesFolder) then
+    DirectoryExists(FFilesFolder) {and
+    DirectoryExists(FArchivesFolder)} then
       begin
         tmrArchive.Interval := FPeriod;
         tmrArchive.Enabled := True;
