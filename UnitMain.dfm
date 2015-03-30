@@ -1,5 +1,5 @@
 object frmMain: TfrmMain
-  Left = 227
+  Left = 245
   Top = 131
   Width = 475
   Height = 275
@@ -22,6 +22,12 @@ object frmMain: TfrmMain
     Height = 237
     Align = alClient
     BorderStyle = bsNone
+    Font.Charset = RUSSIAN_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -11
+    Font.Name = 'Lucida Console'
+    Font.Style = []
+    ParentFont = False
     ReadOnly = True
     ScrollBars = ssVertical
     TabOrder = 0

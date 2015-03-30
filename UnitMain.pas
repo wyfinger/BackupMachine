@@ -76,7 +76,7 @@ begin
 
  if FileExists(FRarPath) and
     DirectoryExists(FFilesFolder) {and
-    DirectoryExists(FArchivesFolder)} then
+    DirectoryExists(FArchivesFolder) } then
       begin
         tmrArchive.Interval := FPeriod;
         tmrArchive.Enabled := True;
@@ -84,6 +84,9 @@ begin
         DirMon.Active := True;
       end;
  FFilesList := TStringList.Create;
+
+ Left := Screen.WorkAreaRect.Right - Width;
+ Top := Screen.WorkAreaRect.Bottom - Height;
 end;
 
 procedure TfrmMain.CheckAutostart(Autostart: Boolean);
@@ -151,7 +154,7 @@ var
   DateStr: string;
 begin
  DateTimeToString(DateStr, 'hh:mm:ss', Now());
- mmoLog.Lines.Add(DateStr + ' .... ќкончание архивировани€');
+ mmoLog.Lines.Add(DateStr + ' ....окончание архивировани€');
 end;
 
 procedure TfrmMain.miShowHideClick(Sender: TObject);
@@ -176,7 +179,7 @@ end;
 
 procedure TfrmMain.miExitClick(Sender: TObject);
 begin
- Close;
+ Application.Terminate;
 end;
 
 procedure TfrmMain.miConfigClick(Sender: TObject);
@@ -190,6 +193,7 @@ end;
 procedure TfrmMain.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
  TrayIcon.HideMainForm;
+ CanClose := False;
 end;
 
 end.
