@@ -32,10 +32,11 @@ object frmMain: TfrmMain
     ScrollBars = ssVertical
     TabOrder = 0
     OnChange = mmoLogChange
+    OnEnter = mmoLogEnter
     OnMouseDown = mmoLogMouseDown
   end
   object tmrArchive: TTimer
-    Interval = 10000
+    Interval = 30000
     OnTimer = tmrArchiveTimer
     Left = 16
     Top = 48
