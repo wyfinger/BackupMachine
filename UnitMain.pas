@@ -45,6 +45,7 @@ type
     { Private declarations }
     procedure CheckAutostart(Autostart: Boolean);
     function GetSelfVersion(): string;
+    function DirectoryExistsEx(Directory: string): Boolean;
   public
     { Public declarations }
     FFilesFolder    : string;   // Что архивировать
@@ -87,8 +88,8 @@ begin
  CheckAutostart(FAutostart);
 
  if FileExists(FRarPath) and
-    DirectoryExists(FFilesFolder) {and
-    DirectoryExists(FArchivesFolder) } then
+    DirectoryExists(FFilesFolder) and
+    DirectoryExistsEx(FArchivesFolder) then
       begin
         tmrArchive.Interval := FPeriod;
         tmrArchive.Enabled := True;
@@ -138,6 +139,22 @@ begin
          Result := tValue;
      FreeMem(tBuff, tSize);
    end;
+end;
+
+// Проверка существования папки в том числе и в сети
+function TfrmMain.DirectoryExistsEx(Directory: string): Boolean;
+var
+  sss : TWIN32FindData;
+  f   : THandle;
+  p   : string;
+begin
+ p := ExcludeTrailingBackslash(Directory);
+ f := FindFirstFile(PChar(p), sss);
+ if f <> INVALID_HANDLE_VALUE then
+   begin
+     Result := True;
+     Windows.FindClose(f);
+   end;          
 end;
 
 procedure TfrmMain.DirMonCreated(Sender: TObject; FileName: String);
