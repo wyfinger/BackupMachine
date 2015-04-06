@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ExtCtrls, DirMon, IniFiles, Registry, process, CoolTrayIcon,
-  Menus, ShellAPI;
+  Menus, ShellAPI, ImgList;
 
 type
   TfrmMain = class(TForm)
@@ -19,6 +19,8 @@ type
     miSep1: TMenuItem;
     miExit: TMenuItem;
     miConfig: TMenuItem;
+    ilState: TImageList;
+    ilAnim: TImageList;
     procedure DirMonCreated(Sender: TObject; FileName: String);
     procedure DirMonDeleted(Sender: TObject; FileName: String);
     procedure DirMonModified(Sender: TObject; FileName: String);
@@ -45,6 +47,7 @@ type
     { Private declarations }
     procedure CheckAutostart(Autostart: Boolean);
     function GetSelfVersion(): string;
+    function DirectoryExistsEx(Directory: string): Boolean;
   public
     { Public declarations }
     FFilesFolder    : string;   // Что архивировать
@@ -87,8 +90,8 @@ begin
  CheckAutostart(FAutostart);
 
  if FileExists(FRarPath) and
-    DirectoryExists(FFilesFolder) {and
-    DirectoryExists(FArchivesFolder) } then
+    DirectoryExists(FFilesFolder) and
+    DirectoryExistsEx(FArchivesFolder) then
       begin
         tmrArchive.Interval := FPeriod;
         tmrArchive.Enabled := True;
@@ -138,6 +141,22 @@ begin
          Result := tValue;
      FreeMem(tBuff, tSize);
    end;
+end;
+
+// Проверка существования папки в том числе и в сети
+function TfrmMain.DirectoryExistsEx(Directory: string): Boolean;
+var
+  sss : TWIN32FindData;
+  f   : THandle;
+  p   : string;
+begin
+ p := ExcludeTrailingBackslash(Directory);
+ f := FindFirstFile(PChar(p), sss);
+ if f <> INVALID_HANDLE_VALUE then
+   begin
+     Result := True;
+     Windows.FindClose(f);
+   end;          
 end;
 
 procedure TfrmMain.DirMonCreated(Sender: TObject; FileName: String);
@@ -191,7 +210,13 @@ begin
    begin
      DateTimeToString(DateStr, 'hh:mm:ss', Now());
      mmoLog.Lines.Add(DateStr + ' Начало архивирования....');
-     FFilesList.SaveToFile(FArchivesFolder+'files.lst');
+     try
+       FFilesList.SaveToFile(FArchivesFolder+'files.lst');
+     except
+       mmoLog.Lines.Add(DateStr + ' ....ОШИБКА: не удалось сохранить файл-список в целевом каталоге....');
+     end;
+     TrayIcon.IconList := ilAnim;
+     TrayIcon.CycleIcons := True;
      FFilesList.Clear;
      Process.AppName := FRarPath;
      Process.CommandLine := FCommand;
@@ -207,6 +232,9 @@ var
   Msg     : string;
 begin
  DateTimeToString(DateStr, 'hh:mm:ss', Now());
+ TrayIcon.IconList := ilState;
+ TrayIcon.CycleIcons := False;
+ TrayIcon.IconIndex := 0;
  if ExitCode = 0 then
    mmoLog.Lines.Add(DateStr + ' ....окончание архивирования')
  else begin
