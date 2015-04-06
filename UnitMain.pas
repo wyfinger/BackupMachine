@@ -214,6 +214,7 @@ begin
        FFilesList.SaveToFile(FArchivesFolder+'files.lst');
      except
        mmoLog.Lines.Add(DateStr + ' ....ОШИБКА: не удалось сохранить файл-список в целевом каталоге....');
+       Exit;
      end;
      TrayIcon.IconList := ilAnim;
      TrayIcon.CycleIcons := True;
