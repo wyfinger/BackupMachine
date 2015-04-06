@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ExtCtrls, DirMon, IniFiles, Registry, process, CoolTrayIcon,
-  Menus, ShellAPI;
+  Menus, ShellAPI, ImgList;
 
 type
   TfrmMain = class(TForm)
@@ -19,6 +19,8 @@ type
     miSep1: TMenuItem;
     miExit: TMenuItem;
     miConfig: TMenuItem;
+    ilState: TImageList;
+    ilAnim: TImageList;
     procedure DirMonCreated(Sender: TObject; FileName: String);
     procedure DirMonDeleted(Sender: TObject; FileName: String);
     procedure DirMonModified(Sender: TObject; FileName: String);
@@ -208,7 +210,13 @@ begin
    begin
      DateTimeToString(DateStr, 'hh:mm:ss', Now());
      mmoLog.Lines.Add(DateStr + ' Начало архивирования....');
-     FFilesList.SaveToFile(FArchivesFolder+'files.lst');
+     try
+       FFilesList.SaveToFile(FArchivesFolder+'files.lst');
+     except
+       mmoLog.Lines.Add(DateStr + ' ....ОШИБКА: не удалось сохранить файл-список в целевом каталоге....');
+     end;
+     TrayIcon.IconList := ilAnim;
+     TrayIcon.CycleIcons := True;
      FFilesList.Clear;
      Process.AppName := FRarPath;
      Process.CommandLine := FCommand;
@@ -224,6 +232,9 @@ var
   Msg     : string;
 begin
  DateTimeToString(DateStr, 'hh:mm:ss', Now());
+ TrayIcon.IconList := ilState;
+ TrayIcon.CycleIcons := False;
+ TrayIcon.IconIndex := 0;
  if ExitCode = 0 then
    mmoLog.Lines.Add(DateStr + ' ....окончание архивирования')
  else begin
