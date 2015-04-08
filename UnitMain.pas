@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ExtCtrls, DirMon, IniFiles, Registry, process, CoolTrayIcon,
-  Menus, ShellAPI, ImgList;
+  Menus, ShellAPI, ImgList, ComCtrls;
 
 type
   TfrmMain = class(TForm)
@@ -21,6 +21,9 @@ type
     miConfig: TMenuItem;
     ilState: TImageList;
     ilAnim: TImageList;
+    redtLog: TRichEdit;
+    hcLog: THeaderControl;
+    btn1: TButton;
     procedure DirMonCreated(Sender: TObject; FileName: String);
     procedure DirMonDeleted(Sender: TObject; FileName: String);
     procedure DirMonModified(Sender: TObject; FileName: String);
@@ -38,6 +41,8 @@ type
     procedure miConfigClick(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure mmoLogEnter(Sender: TObject);
+    procedure btn1Click(Sender: TObject);
+    procedure hcLogResize(Sender: TObject);
   protected
     { Protected declarations }
     FSettings  : TIniFile;
@@ -46,8 +51,9 @@ type
   private
     { Private declarations }
     procedure CheckAutostart(Autostart: Boolean);
-    function GetSelfVersion(): string;
-    function DirectoryExistsEx(Directory: string): Boolean;
+    function  GetSelfVersion(): string;
+    function  DirectoryExistsEx(Directory: string): Boolean;
+    procedure AddLogLine(Level: Byte; Tag, Description: string);
   public
     { Public declarations }
     FFilesFolder    : string;   // Что архивировать
@@ -57,6 +63,7 @@ type
     FPeriod         : Integer;  // Минимальная периодичность
     FAutostart      : Boolean;
     FShowRar        : Boolean;
+    FLogLevel       : Integer;
   end;
 
 var
@@ -83,6 +90,7 @@ begin
  FAutostart      := tAutostart <> 0;
  tShowRar        := FSettings.ReadInteger('system', 'show_rar_mode', 0);
  FShowRar        := tShowRar <> 0;
+ FLogLevel       := FSettings.ReadInteger('system', 'loglevel', 7);
 
  if FShowRar then Process.ShowWindow := swShowNormal
    else Process.ShowWindow := swHide;
@@ -107,6 +115,10 @@ begin
  Top := Screen.WorkAreaRect.Bottom - Height;
 
  Caption := Caption + ' ' +GetSelfVersion();
+
+ redtLog.Paragraph.TabCount := 2;
+ redtLog.Paragraph.Tab[0] := hcLog.Sections[0].Width;
+ redtLog.Paragraph.Tab[1] := hcLog.Sections[1].Width;
 end;
 
 procedure TfrmMain.CheckAutostart(Autostart: Boolean);
@@ -158,6 +170,17 @@ begin
      Windows.FindClose(f);
    end;          
 end;
+
+// Добавление строки в лог
+procedure TfrmMain.AddLogLine(Level: Byte; Tag, Description: string);
+var
+  DateStr: string;
+begin
+ //if not Level and FLogLevel <> Level then Exit;
+ DateTimeToString(DateStr, 'hh:mm:ss', Now());
+ redtLog.Lines.Add(Tag +#9+ DateStr +#9+ Description);
+end;
+
 
 procedure TfrmMain.DirMonCreated(Sender: TObject; FileName: String);
 begin
@@ -299,6 +322,16 @@ procedure TfrmMain.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
  TrayIcon.HideMainForm;
  CanClose := False;
+end;
+
+procedure TfrmMain.btn1Click(Sender: TObject);
+begin
+ AddLogLine(0, 'q', 'Test');
+end;
+
+procedure TfrmMain.hcLogResize(Sender: TObject);
+begin
+ redtLog.Paragraph.Tab[1] := hcLog.Sections[1].Width;
 end;
 
 end.

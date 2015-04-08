@@ -1,6 +1,6 @@
 object frmMain: TfrmMain
-  Left = 231
-  Top = 133
+  Left = 216
+  Top = 121
   Width = 475
   Height = 275
   Caption = 'Backup Machine Log'
@@ -17,10 +17,9 @@ object frmMain: TfrmMain
   TextHeight = 13
   object mmoLog: TMemo
     Left = 0
-    Top = 0
+    Top = 152
     Width = 459
-    Height = 237
-    Align = alClient
+    Height = 85
     BorderStyle = bsNone
     Font.Charset = RUSSIAN_CHARSET
     Font.Color = clWindowText
@@ -31,10 +30,60 @@ object frmMain: TfrmMain
     ReadOnly = True
     ScrollBars = ssBoth
     TabOrder = 0
+    Visible = False
     WordWrap = False
     OnChange = mmoLogChange
     OnEnter = mmoLogEnter
     OnMouseDown = mmoLogMouseDown
+  end
+  object hcLog: THeaderControl
+    Left = 0
+    Top = 0
+    Width = 459
+    Height = 17
+    FullDrag = False
+    Sections = <
+      item
+        AllowClick = False
+        ImageIndex = -1
+        MaxWidth = 20
+        MinWidth = 20
+        Width = 20
+      end
+      item
+        AllowClick = False
+        ImageIndex = -1
+        MinWidth = 60
+        Text = 'Time'
+        Width = 60
+      end
+      item
+        AllowClick = False
+        ImageIndex = -1
+        Text = 'Description'
+        Width = 400
+      end>
+    OnResize = hcLogResize
+  end
+  object redtLog: TRichEdit
+    Left = 0
+    Top = 17
+    Width = 459
+    Height = 220
+    Align = alClient
+    BorderStyle = bsNone
+    Lines.Strings = (
+      'redtLog')
+    TabOrder = 1
+  end
+  object btn1: TButton
+    Left = 256
+    Top = 72
+    Width = 49
+    Height = 25
+    Caption = 'btn1'
+    TabOrder = 3
+    OnClick = btn1Click
   end
   object tmrArchive: TTimer
     Interval = 30000
