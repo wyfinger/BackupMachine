@@ -15,27 +15,6 @@ object frmMain: TfrmMain
   OnCreate = FormCreate
   PixelsPerInch = 96
   TextHeight = 13
-  object mmoLog: TMemo
-    Left = 0
-    Top = 152
-    Width = 459
-    Height = 85
-    BorderStyle = bsNone
-    Font.Charset = RUSSIAN_CHARSET
-    Font.Color = clWindowText
-    Font.Height = -11
-    Font.Name = 'Lucida Console'
-    Font.Style = []
-    ParentFont = False
-    ReadOnly = True
-    ScrollBars = ssBoth
-    TabOrder = 0
-    Visible = False
-    WordWrap = False
-    OnChange = mmoLogChange
-    OnEnter = mmoLogEnter
-    OnMouseDown = mmoLogMouseDown
-  end
   object hcLog: THeaderControl
     Left = 0
     Top = 0
@@ -65,33 +44,26 @@ object frmMain: TfrmMain
       end>
     OnSectionResize = hcLogSectionResize
   end
-  object redtLog: TRichEdit
-    Left = 0
-    Top = 17
-    Width = 459
-    Height = 220
-    Align = alClient
-    BorderStyle = bsNone
-    TabOrder = 1
-    WordWrap = False
-    OnEnter = redtLogEnter
-  end
   object btn1: TButton
     Left = 280
     Top = 40
     Width = 57
     Height = 33
     Caption = 'btn1'
-    TabOrder = 3
+    TabOrder = 1
   end
-  object LogEdit1: TLogEdit
-    Left = 136
-    Top = 80
-    Width = 209
-    Height = 129
-    Lines.Strings = (
-      'LogEdit1')
-    TabOrder = 4
+  object redtLog: TLogEdit
+    Left = 0
+    Top = 17
+    Width = 459
+    Height = 220
+    Cursor = crArrow
+    Align = alClient
+    BorderStyle = bsNone
+    ReadOnly = True
+    ScrollBars = ssBoth
+    TabOrder = 2
+    WordWrap = False
   end
   object tmrArchive: TTimer
     Interval = 30000

@@ -3,7 +3,7 @@ files_folder=D:\Wyfinger\
 archives_folder=G:\ARCHIV\Backup\Wyfinger\
 
 [system]
-rar_path=C:\Program Files\WinRAR\rar.exe
+rar_path=C:\Program Files\WinRAR\rars.exe
 ; -ag добавить дату к имени 
 ; -dh открывать совместно используемые файлы.
 ; -pbak пароль, чтобы антивирус не тупил
@@ -19,3 +19,6 @@ period=5
 autostart=1
 ; 1 - show; 0 - hide
 show_rar_mode=0  
+
+;
+loglevel=1 

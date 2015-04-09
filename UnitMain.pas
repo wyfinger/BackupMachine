@@ -9,7 +9,6 @@ uses
 
 type
   TfrmMain = class(TForm)
-    mmoLog: TMemo;
     tmrArchive: TTimer;
     DirMon: TDirMon;
     Process: TProcess;
@@ -21,30 +20,24 @@ type
     miConfig: TMenuItem;
     ilState: TImageList;
     ilAnim: TImageList;
-    redtLog: TRichEdit;
     hcLog: THeaderControl;
     btn1: TButton;
-    LogEdit1: TLogEdit;
+    redtLog: TLogEdit;
     procedure DirMonCreated(Sender: TObject; FileName: String);
     procedure DirMonDeleted(Sender: TObject; FileName: String);
     procedure DirMonModified(Sender: TObject; FileName: String);
     procedure DirMonRenamed(Sender: TObject; fromFileName,
       toFileName: String);
     procedure FormCreate(Sender: TObject);
-    procedure mmoLogChange(Sender: TObject);
     procedure tmrArchiveTimer(Sender: TObject);
     procedure ProcessFinished(Sender: TObject; ExitCode: Cardinal);
     procedure miShowHideClick(Sender: TObject);
-    procedure mmoLogMouseDown(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y: Integer);
     procedure TrayIconStartup(Sender: TObject; var ShowMainForm: Boolean);
     procedure miExitClick(Sender: TObject);
     procedure miConfigClick(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
-    procedure mmoLogEnter(Sender: TObject);
     procedure hcLogSectionResize(HeaderControl: THeaderControl;
       Section: THeaderSection);
-    procedure redtLogEnter(Sender: TObject);
   protected
     { Protected declarations }
     FSettings  : TIniFile;
@@ -81,7 +74,6 @@ implementation
 procedure TfrmMain.FormCreate(Sender: TObject);
 var
   tAutostart, tShowRar : Integer;
-  tPar                 : TParaAttributes;
 begin
  // Загрузка параметров из конфигурационного файла
  FSettings := TIniFile.Create(ExtractFilePath(Application.ExeName) + 'BMachine.ini');
@@ -103,6 +95,17 @@ begin
 
  CheckAutostart(FAutostart);
 
+ redtLog.TabCount := 2;
+ redtLog.Tab[0] := hcLog.Sections[0].Width;
+ redtLog.Tab[1] := hcLog.Sections[0].Width + hcLog.Sections[1].Width;
+
+ if not FileExists(FRarPath) then
+   AddLogLine(0, 'E', 'Can''t find RAR executable file, monitor is not started');
+ if not DirectoryExists(FFilesFolder) then
+   AddLogLine(0, 'E', 'Files folder is not found, monitor is not started');
+ if not DirectoryExistsEx(FArchivesFolder) then
+   AddLogLine(0, 'E', 'Dest folder for archives is not found, monitor is not started');
+
  if FileExists(FRarPath) and
     DirectoryExists(FFilesFolder) and
     DirectoryExistsEx(FArchivesFolder) then
@@ -111,20 +114,14 @@ begin
         tmrArchive.Enabled := True;
         DirMon.Path := FFilesFolder;
         DirMon.Active := True;
-      end
- else begin
-   mmoLog.Lines.Add('ОШИБКА: Ошибка в конфиге, возможно пути не существуют. Мониторинг не запущен!');
- end;
+      end;
+
  FFilesList := TStringList.Create;
 
  Left := Screen.WorkAreaRect.Right - Width;
- Top := Screen.WorkAreaRect.Bottom - Height;
+ Top := Screen.WorkAreaRect.Bottom - Height;    
 
  Caption := Caption + ' ' +GetSelfVersion();
-  
- redtLog.Paragraph.TabCount := 2;
- redtLog.Paragraph.Tab[0] := (hcLog.Sections[0].Width * 72) div GetDeviceCaps(Canvas.Handle, LOGPIXELSX);
- redtLog.Paragraph.Tab[1] := ((hcLog.Sections[0].Width + hcLog.Sections[1].Width) * 72) div GetDeviceCaps(Canvas.Handle, LOGPIXELSX);
 end;
 
 procedure TfrmMain.CheckAutostart(Autostart: Boolean);
@@ -168,13 +165,11 @@ var
   f   : THandle;
   p   : string;
 begin
+ Result := False;
  p := ExcludeTrailingBackslash(Directory);
  f := FindFirstFile(PChar(p), sss);
- if f <> INVALID_HANDLE_VALUE then
-   begin
-     Result := True;
-     Windows.FindClose(f);
-   end;          
+ if f <> INVALID_HANDLE_VALUE then Result := True;
+ Windows.FindClose(f);
 end;
 
 // Добавление строки в лог
@@ -182,16 +177,38 @@ procedure TfrmMain.AddLogLine(Level: Byte; Tag, Description: string);
 var
   DateStr: string;
 begin
- if not Level and FLogLevel = Level then Exit;
+ if not (FLogLevel and Level = Level) then Exit;
  DateTimeToString(DateStr, 'hh:mm:ss', Now());
- redtLog.Lines.Add('  '+ Tag +#9+ DateStr +#9+ Description);
+ redtLog.SelStart := Length(redtLog.Lines.Text);
+ redtLog.SelLength := 0;
+ with redtLog.SelAttributes do
+   begin
+     if Level = 0 then  // ошибки
+       begin
+         Color := clRed;
+         Style := [];
+       end;
+     if Level = 1 then  // события монитора
+       begin
+         Color := clWindowText;
+         Style := [];
+       end;
+     if Level = 2 then  // запуск rar
+       begin
+         Color := clWindowText;
+         Style := [fsBold];
+       end;
+   end;
+ redtLog.Lines.Add('  '+ Tag +#9+ DateStr +#9+ Description);  
+ redtLog.ScrollBy(0, 999);
 end;
 
 procedure TfrmMain.DirMonCreated(Sender: TObject; FileName: String);
 begin
- if (FileName <> FLastFile) and not DirectoryExists(FFilesFolder+FileName) then
+ if (FileName <> FLastFile) and not DirectoryExists(FFilesFolder+FileName) and
+   FileExists(FFilesFolder+FileName) then
    begin
-     mmoLog.Lines.Add('Создание файла: "'+FileName+'"');
+     AddLogLine(1, 'C', FFilesFolder+FileName);
      FFilesList.Add(FFilesFolder+FileName);
      FLastFile := FileName;
    end;
@@ -200,14 +217,15 @@ end;
 procedure TfrmMain.DirMonDeleted(Sender: TObject; FileName: String);
 begin
  if not DirectoryExists(FileName) then
-   mmoLog.Lines.Add('Удаление файла: "'+FileName+'"');
+   AddLogLine(1, 'D', FFilesFolder+FileName);
 end;
 
 procedure TfrmMain.DirMonModified(Sender: TObject; FileName: String);
 begin
- if (FileName <> FLastFile) and not DirectoryExists(FFilesFolder+FileName) then
+ if (FileName <> FLastFile) and not DirectoryExists(FFilesFolder+FileName) and
+   FileExists(FFilesFolder+FileName) then
    begin
-     mmoLog.Lines.Add('Изменение файла: "'+FileName+'"');
+     AddLogLine(1, 'M', FFilesFolder+FileName);
      FFilesList.Add(FFilesFolder+FileName);
      FLastFile := FileName;
    end;
@@ -216,32 +234,24 @@ end;
 procedure TfrmMain.DirMonRenamed(Sender: TObject; fromFileName,
   toFileName: String);
 begin
- if (toFileName <> FLastFile) and not DirectoryExists(FFilesFolder+toFileName) then
+ if (toFileName <> FLastFile) and not DirectoryExists(FFilesFolder+toFileName) and
+   FileExists(FFilesFolder+toFileName) then
    begin
-     mmoLog.Lines.Add('Переименование файла: "'+fromFileName+'" в "'+toFileName+'"');
+     AddLogLine(1, 'R', FFilesFolder+toFileName);
      FFilesList.Add(FFilesFolder+toFileName);
      FLastFile := toFileName;
    end;
 end;
 
-procedure TfrmMain.mmoLogChange(Sender: TObject);
-begin
- mmoLog.ScrollBy(0, 1000);
- HideCaret(mmoLog.Handle);
-end;
-
 procedure TfrmMain.tmrArchiveTimer(Sender: TObject);
-var
-  DateStr: string;
 begin
  if (FFilesList.Count > 0) and not Process.Active then
    begin
-     DateTimeToString(DateStr, 'hh:mm:ss', Now());
-     mmoLog.Lines.Add(DateStr + ' Начало архивирования....');
+     AddLogLine(2, 'A', 'Start RAR for archiving');
      try
        FFilesList.SaveToFile(FArchivesFolder+'files.lst');
      except
-       mmoLog.Lines.Add(DateStr + ' ....ОШИБКА: не удалось сохранить файл-список в целевом каталоге....');
+       AddLogLine(0, 'E', 'Can''t save file list in dest directory');
        Exit;
      end;
      TrayIcon.IconList := ilAnim;
@@ -264,25 +274,22 @@ begin
  TrayIcon.IconList := ilState;
  TrayIcon.CycleIcons := False;
  TrayIcon.IconIndex := 0;
- if ExitCode = 0 then
-   mmoLog.Lines.Add(DateStr + ' ....окончание архивирования')
- else begin
-   case ExitCode of
-       1 : Msg := 'Некритические ошибки.';
-       2 : Msg := 'Критическая ошибка.';
-       3 : Msg := 'Неверная контрольная сумма, данные повреждены.';
-       4 : Msg := 'Попытка изменить архив, заблокированный командой ''k''.';
-       5 : Msg := 'Ошибка записи на диск.';
-       6 : Msg := 'Ошибка открытия файла.';
-       7 : Msg := 'Неверный параметр в командной строке.';
-       8 : Msg := 'Недостаточно памяти для выполнения операции.';
-       9 : Msg := 'Ошибка создания файла.';
-      10 : Msg := 'Нет файлов, удовлетворяющих указанной маске, и параметров.';
-      11 : Msg := 'Неверный пароль.';
-     255 : Msg := 'Процесс остановлен пользователем.';
-   end;
-   mmoLog.Lines.Add(DateStr + ' ....ОШИБКА: ' + Msg);
- end; 
+ Msg := 'RAR process is ended';
+ case ExitCode of
+       1 : Msg := Msg+ ' (Некритические ошибки)';
+       2 : Msg := Msg+ ' (Критическая ошибка)';
+       3 : Msg := Msg+ ' (Неверная контрольная сумма, данные повреждены)';
+       4 : Msg := Msg+ ' (Попытка изменить архив, заблокированный командой ''k'')';
+       5 : Msg := Msg+ ' (Ошибка записи на диск)';
+       6 : Msg := Msg+ ' (Ошибка открытия файла)';
+       7 : Msg := Msg+ ' (Неверный параметр в командной строке)';
+       8 : Msg := Msg+ ' (Недостаточно памяти для выполнения операции)';
+       9 : Msg := Msg+ ' (Ошибка создания файла)';
+      10 : Msg := Msg+ ' (Нет файлов, удовлетворяющих указанной маске, и параметров)';
+      11 : Msg := Msg+ ' (Неверный пароль)';
+     255 : Msg := Msg+ ' (Процесс остановлен пользователем)';
+ end;
+ AddLogLine(2, 'A', Msg);
 end;
 
 procedure TfrmMain.miShowHideClick(Sender: TObject);
@@ -292,22 +299,10 @@ begin
    else miShowHide.Caption := 'Показать лог';
 end;
 
-procedure TfrmMain.mmoLogMouseDown(Sender: TObject; Button: TMouseButton;
-  Shift: TShiftState; X, Y: Integer);
-begin
- HideCaret(mmoLog.Handle);
-end;
-
-procedure TfrmMain.mmoLogEnter(Sender: TObject);
-begin
- HideCaret(mmoLog.Handle);
-end;
-
 procedure TfrmMain.TrayIconStartup(Sender: TObject;
   var ShowMainForm: Boolean);
 begin
  ShowMainForm := false;
- HideCaret(mmoLog.Handle);
 end;
 
 procedure TfrmMain.miExitClick(Sender: TObject);
@@ -331,24 +326,9 @@ end;
 
 procedure TfrmMain.hcLogSectionResize(HeaderControl: THeaderControl;
   Section: THeaderSection);
-var
-  tSelStart, tSelLen : Integer;
 begin
- SendMessage(redtLog.Handle, WM_SETREDRAW, Integer(False), 0);
- tSelStart := redtLog.SelStart;
- tSelLen := redtLog.SelLength;
- redtLog.SelectAll;
- redtLog.Paragraph.Tab[1] := ((hcLog.Sections[0].Width + hcLog.Sections[1].Width) * 72) div GetDeviceCaps(Canvas.Handle, LOGPIXELSX);
- redtLog.SelStart := tSelStart;
- redtLog.SelLength := tSelLen;
- SendMessage(redtLog.Handle, WM_SETREDRAW, Integer(True), 0);
- redtLog.Repaint;
-end;
-
-procedure TfrmMain.redtLogEnter(Sender: TObject);
-begin
+ redtLog.Tab[1] := hcLog.Sections[0].Width + hcLog.Sections[1].Width;
  HideCaret(redtLog.Handle);
- DestroyCaret;
 end;
 
 end.
