@@ -1,6 +1,6 @@
 object frmMain: TfrmMain
-  Left = 216
-  Top = 121
+  Left = 208
+  Top = 141
   Width = 475
   Height = 275
   Caption = 'Backup Machine Log'
@@ -61,9 +61,9 @@ object frmMain: TfrmMain
         AllowClick = False
         ImageIndex = -1
         Text = 'Description'
-        Width = 400
+        Width = 900
       end>
-    OnResize = hcLogResize
+    OnSectionResize = hcLogSectionResize
   end
   object redtLog: TRichEdit
     Left = 0
@@ -72,18 +72,26 @@ object frmMain: TfrmMain
     Height = 220
     Align = alClient
     BorderStyle = bsNone
-    Lines.Strings = (
-      'redtLog')
     TabOrder = 1
+    WordWrap = False
+    OnEnter = redtLogEnter
   end
   object btn1: TButton
-    Left = 256
-    Top = 72
-    Width = 49
-    Height = 25
+    Left = 280
+    Top = 40
+    Width = 57
+    Height = 33
     Caption = 'btn1'
     TabOrder = 3
-    OnClick = btn1Click
+  end
+  object LogEdit1: TLogEdit
+    Left = 136
+    Top = 80
+    Width = 209
+    Height = 129
+    Lines.Strings = (
+      'LogEdit1')
+    TabOrder = 4
   end
   object tmrArchive: TTimer
     Interval = 30000

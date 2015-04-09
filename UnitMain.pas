@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ExtCtrls, DirMon, IniFiles, Registry, process, CoolTrayIcon,
-  Menus, ShellAPI, ImgList, ComCtrls;
+  Menus, ShellAPI, ImgList, ComCtrls, RichEdit, LogEdit;
 
 type
   TfrmMain = class(TForm)
@@ -24,6 +24,7 @@ type
     redtLog: TRichEdit;
     hcLog: THeaderControl;
     btn1: TButton;
+    LogEdit1: TLogEdit;
     procedure DirMonCreated(Sender: TObject; FileName: String);
     procedure DirMonDeleted(Sender: TObject; FileName: String);
     procedure DirMonModified(Sender: TObject; FileName: String);
@@ -41,8 +42,9 @@ type
     procedure miConfigClick(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure mmoLogEnter(Sender: TObject);
-    procedure btn1Click(Sender: TObject);
-    procedure hcLogResize(Sender: TObject);
+    procedure hcLogSectionResize(HeaderControl: THeaderControl;
+      Section: THeaderSection);
+    procedure redtLogEnter(Sender: TObject);
   protected
     { Protected declarations }
     FSettings  : TIniFile;
@@ -64,6 +66,9 @@ type
     FAutostart      : Boolean;
     FShowRar        : Boolean;
     FLogLevel       : Integer;
+
+    nxLogPixels     : Integer;
+    nTextFontWidth  : Integer;
   end;
 
 var
@@ -76,6 +81,7 @@ implementation
 procedure TfrmMain.FormCreate(Sender: TObject);
 var
   tAutostart, tShowRar : Integer;
+  tPar                 : TParaAttributes;
 begin
  // Загрузка параметров из конфигурационного файла
  FSettings := TIniFile.Create(ExtractFilePath(Application.ExeName) + 'BMachine.ini');
@@ -115,10 +121,10 @@ begin
  Top := Screen.WorkAreaRect.Bottom - Height;
 
  Caption := Caption + ' ' +GetSelfVersion();
-
+  
  redtLog.Paragraph.TabCount := 2;
- redtLog.Paragraph.Tab[0] := hcLog.Sections[0].Width;
- redtLog.Paragraph.Tab[1] := hcLog.Sections[1].Width;
+ redtLog.Paragraph.Tab[0] := (hcLog.Sections[0].Width * 72) div GetDeviceCaps(Canvas.Handle, LOGPIXELSX);
+ redtLog.Paragraph.Tab[1] := ((hcLog.Sections[0].Width + hcLog.Sections[1].Width) * 72) div GetDeviceCaps(Canvas.Handle, LOGPIXELSX);
 end;
 
 procedure TfrmMain.CheckAutostart(Autostart: Boolean);
@@ -176,11 +182,10 @@ procedure TfrmMain.AddLogLine(Level: Byte; Tag, Description: string);
 var
   DateStr: string;
 begin
- //if not Level and FLogLevel <> Level then Exit;
+ if not Level and FLogLevel = Level then Exit;
  DateTimeToString(DateStr, 'hh:mm:ss', Now());
- redtLog.Lines.Add(Tag +#9+ DateStr +#9+ Description);
+ redtLog.Lines.Add('  '+ Tag +#9+ DateStr +#9+ Description);
 end;
-
 
 procedure TfrmMain.DirMonCreated(Sender: TObject; FileName: String);
 begin
@@ -324,14 +329,26 @@ begin
  CanClose := False;
 end;
 
-procedure TfrmMain.btn1Click(Sender: TObject);
+procedure TfrmMain.hcLogSectionResize(HeaderControl: THeaderControl;
+  Section: THeaderSection);
+var
+  tSelStart, tSelLen : Integer;
 begin
- AddLogLine(0, 'q', 'Test');
+ SendMessage(redtLog.Handle, WM_SETREDRAW, Integer(False), 0);
+ tSelStart := redtLog.SelStart;
+ tSelLen := redtLog.SelLength;
+ redtLog.SelectAll;
+ redtLog.Paragraph.Tab[1] := ((hcLog.Sections[0].Width + hcLog.Sections[1].Width) * 72) div GetDeviceCaps(Canvas.Handle, LOGPIXELSX);
+ redtLog.SelStart := tSelStart;
+ redtLog.SelLength := tSelLen;
+ SendMessage(redtLog.Handle, WM_SETREDRAW, Integer(True), 0);
+ redtLog.Repaint;
 end;
 
-procedure TfrmMain.hcLogResize(Sender: TObject);
+procedure TfrmMain.redtLogEnter(Sender: TObject);
 begin
- redtLog.Paragraph.Tab[1] := hcLog.Sections[1].Width;
+ HideCaret(redtLog.Handle);
+ DestroyCaret;
 end;
 
 end.
