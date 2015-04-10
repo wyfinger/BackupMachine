@@ -122,6 +122,10 @@ begin
         tmrArchive.Enabled := True;
         DirMon.Path := FFilesFolder;
         DirMon.Active := True;
+      end else
+      begin
+        TrayIcon.IconList := ilError;
+        TrayIcon.CycleIcons := True;
       end;
 
  FFilesList := TStringList.Create;
@@ -219,6 +223,7 @@ end;
 // Запуск анимации иконки при изменениях файлов
 procedure TfrmMain.AnimateProgress;
 begin
+ if TrayIcon.IconList = ilError then Exit;
  TrayIcon.IconList := ilProgress;
  TrayIcon.CycleIcons := True;
  tmrProgress.Enabled := False; // сбрасываем таймер
@@ -304,18 +309,18 @@ begin
  TrayIcon.IconIndex := 0;
  Msg := 'RAR process is ended';
  case ExitCode of
-       1 : Msg := Msg+ ' (Некритические ошибки)';
-       2 : Msg := Msg+ ' (Критическая ошибка)';
-       3 : Msg := Msg+ ' (Неверная контрольная сумма, данные повреждены)';
-       4 : Msg := Msg+ ' (Попытка изменить архив, заблокированный командой ''k'')';
-       5 : Msg := Msg+ ' (Ошибка записи на диск)';
-       6 : Msg := Msg+ ' (Ошибка открытия файла)';
-       7 : Msg := Msg+ ' (Неверный параметр в командной строке)';
-       8 : Msg := Msg+ ' (Недостаточно памяти для выполнения операции)';
-       9 : Msg := Msg+ ' (Ошибка создания файла)';
-      10 : Msg := Msg+ ' (Нет файлов, удовлетворяющих указанной маске, и параметров)';
-      11 : Msg := Msg+ ' (Неверный пароль)';
-     255 : Msg := Msg+ ' (Процесс остановлен пользователем)';
+       1 : Msg := Msg+ ' (Non fatal error(s) occurred)';
+       2 : Msg := Msg+ ' (A fatal error occurred)';
+       3 : Msg := Msg+ ' (Invalid checksum. Data is damaged)';
+       4 : Msg := Msg+ ' (Attempt to modify an archive locked by ''k'' command)';
+       5 : Msg := Msg+ ' (Write error)';
+       6 : Msg := Msg+ ' (File open error)';
+       7 : Msg := Msg+ ' (Wrong command line option)';
+       8 : Msg := Msg+ ' (Not enough memory)';
+       9 : Msg := Msg+ ' (File create error)';
+      10 : Msg := Msg+ ' (No files matching the specified mask and options were found)';
+      11 : Msg := Msg+ ' (Wrong password)';
+     255 : Msg := Msg+ ' (User stopped the process)';
  end;
  AddLogLine(2, 'A', Msg);
 end;
