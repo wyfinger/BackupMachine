@@ -18,11 +18,13 @@ type
     miSep1: TMenuItem;
     miExit: TMenuItem;
     miConfig: TMenuItem;
-    ilState: TImageList;
-    ilAnim: TImageList;
+    ilError: TImageList;
+    ilArchive: TImageList;
     hcLog: THeaderControl;
     btn1: TButton;
     redtLog: TLogEdit;
+    ilProgress: TImageList;
+    tmrProgress: TTimer;
     procedure DirMonCreated(Sender: TObject; FileName: String);
     procedure DirMonDeleted(Sender: TObject; FileName: String);
     procedure DirMonModified(Sender: TObject; FileName: String);
@@ -38,6 +40,7 @@ type
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure hcLogSectionResize(HeaderControl: THeaderControl;
       Section: THeaderSection);
+    procedure tmrProgressTimer(Sender: TObject);
   protected
     { Protected declarations }
     FSettings  : TIniFile;
@@ -49,6 +52,7 @@ type
     function  GetSelfVersion(): string;
     function  DirectoryExistsEx(Directory: string): Boolean;
     procedure AddLogLine(Level: Byte; Tag, Description: string);
+    procedure AnimateProgress;
   public
     { Public declarations }
     FFilesFolder    : string;   // Что архивировать
@@ -59,6 +63,7 @@ type
     FAutostart      : Boolean;
     FShowRar        : Boolean;
     FLogLevel       : Integer;
+    FBaloonTime     : Integer;
 
     nxLogPixels     : Integer;
     nTextFontWidth  : Integer;
@@ -89,6 +94,9 @@ begin
  tShowRar        := FSettings.ReadInteger('system', 'show_rar_mode', 0);
  FShowRar        := tShowRar <> 0;
  FLogLevel       := FSettings.ReadInteger('system', 'loglevel', 7);
+ FBaloonTime     := FSettings.ReadInteger('system', 'ballon_time', 10);
+ if FBaloonTime < 10 then FBaloonTime := 10;
+ if FBaloonTime > 60 then FBaloonTime := 60;
 
  if FShowRar then Process.ShowWindow := swShowNormal
    else Process.ShowWindow := swHide;
@@ -199,8 +207,22 @@ begin
          Style := [fsBold];
        end;
    end;
- redtLog.Lines.Add('  '+ Tag +#9+ DateStr +#9+ Description);  
+ redtLog.Lines.Add('  '+ Tag +#9+ DateStr +#9+ Description);
  redtLog.ScrollBy(0, 999);
+ // Всплывающие сообщения
+ if ((FLogLevel and 4) = 4) and (Level = 0) then
+   TrayIcon.ShowBalloonHint('Error', Description, bitError, FBaloonTime);
+ if ((FLogLevel and 8) = 8) and (Level = 0) then
+   TrayIcon.ShowBalloonHint('Archive', Description, bitInfo, FBaloonTime);
+end;
+
+// Запуск анимации иконки при изменениях файлов
+procedure TfrmMain.AnimateProgress;
+begin
+ TrayIcon.IconList := ilProgress;
+ TrayIcon.CycleIcons := True;
+ tmrProgress.Enabled := False; // сбрасываем таймер
+ tmrProgress.Enabled := True;
 end;
 
 procedure TfrmMain.DirMonCreated(Sender: TObject; FileName: String);
@@ -211,13 +233,17 @@ begin
      AddLogLine(1, 'C', FFilesFolder+FileName);
      FFilesList.Add(FFilesFolder+FileName);
      FLastFile := FileName;
+     AnimateProgress();
    end;
 end;
 
 procedure TfrmMain.DirMonDeleted(Sender: TObject; FileName: String);
 begin
  if not DirectoryExists(FileName) then
-   AddLogLine(1, 'D', FFilesFolder+FileName);
+   begin
+     AddLogLine(1, 'D', FFilesFolder+FileName);
+     AnimateProgress();
+   end;
 end;
 
 procedure TfrmMain.DirMonModified(Sender: TObject; FileName: String);
@@ -228,6 +254,7 @@ begin
      AddLogLine(1, 'M', FFilesFolder+FileName);
      FFilesList.Add(FFilesFolder+FileName);
      FLastFile := FileName;
+     AnimateProgress();
    end;
 end;
 
@@ -240,6 +267,7 @@ begin
      AddLogLine(1, 'R', FFilesFolder+toFileName);
      FFilesList.Add(FFilesFolder+toFileName);
      FLastFile := toFileName;
+     AnimateProgress();
    end;
 end;
 
@@ -254,7 +282,7 @@ begin
        AddLogLine(0, 'E', 'Can''t save file list in dest directory');
        Exit;
      end;
-     TrayIcon.IconList := ilAnim;
+     TrayIcon.IconList := ilArchive;
      TrayIcon.CycleIcons := True;
      FFilesList.Clear;
      Process.AppName := FRarPath;
@@ -271,7 +299,7 @@ var
   Msg     : string;
 begin
  DateTimeToString(DateStr, 'hh:mm:ss', Now());
- TrayIcon.IconList := ilState;
+ TrayIcon.IconList := ilProgress;
  TrayIcon.CycleIcons := False;
  TrayIcon.IconIndex := 0;
  Msg := 'RAR process is ended';
@@ -330,5 +358,13 @@ begin
  redtLog.Tab[1] := hcLog.Sections[0].Width + hcLog.Sections[1].Width;
  HideCaret(redtLog.Handle);
 end;
+
+procedure TfrmMain.tmrProgressTimer(Sender: TObject);
+begin
+ TrayIcon.CycleIcons := False;
+ tmrProgress.Enabled := False;
+end;
+
+
 
 end.
