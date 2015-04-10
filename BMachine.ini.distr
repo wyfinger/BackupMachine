@@ -7,7 +7,7 @@ archives_folder=G:\ARCHIV\Backup\Wyfinger\
 
 [system]
 ; путь к rar
-rar_path=C:\Program Files\WinRAR\rars.exe
+rar_path=C:\Program Files\WinRAR\rar.exe
 
 ; команда запуска rar
 ; -ag добавить дату к имени
