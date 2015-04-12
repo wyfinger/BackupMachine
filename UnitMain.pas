@@ -15,7 +15,7 @@ type
     TrayIcon: TCoolTrayIcon;
     pmTray: TPopupMenu;
     miShowHide: TMenuItem;
-    miSep1: TMenuItem;
+    miSep2: TMenuItem;
     miExit: TMenuItem;
     miConfig: TMenuItem;
     ilError: TImageList;
@@ -25,6 +25,10 @@ type
     redtLog: TLogEdit;
     ilProgress: TImageList;
     tmrProgress: TTimer;
+    miSep1: TMenuItem;
+    miOpenFF: TMenuItem;
+    miOpenBF: TMenuItem;
+    tmrConfig: TTimer;
     procedure DirMonCreated(Sender: TObject; FileName: String);
     procedure DirMonDeleted(Sender: TObject; FileName: String);
     procedure DirMonModified(Sender: TObject; FileName: String);
@@ -41,6 +45,9 @@ type
     procedure hcLogSectionResize(HeaderControl: THeaderControl;
       Section: THeaderSection);
     procedure tmrProgressTimer(Sender: TObject);
+    procedure miOpenFFClick(Sender: TObject);
+    procedure miOpenBFClick(Sender: TObject);
+    procedure tmrConfigTimer(Sender: TObject);
   protected
     { Protected declarations }
     FSettings  : TIniFile;
@@ -53,8 +60,10 @@ type
     function  DirectoryExistsEx(Directory: string): Boolean;
     procedure AddLogLine(Level: Byte; Tag, Description: string);
     procedure AnimateProgress;
+    procedure ReloadConfig();
   public
     { Public declarations }
+    FConfigFile     : string;
     FFilesFolder    : string;   // Что архивировать
     FArchivesFolder : string;   // Куда архивировать
     FRarPath        : string;   // Путь к RAR
@@ -67,6 +76,8 @@ type
 
     nxLogPixels     : Integer;
     nTextFontWidth  : Integer;
+
+    FConfigFileDate : Integer;
   end;
 
 var
@@ -77,11 +88,32 @@ implementation
 {$R *.dfm}
 
 procedure TfrmMain.FormCreate(Sender: TObject);
-var
-  tAutostart, tShowRar : Integer;
 begin
+ redtLog.TabCount := 2;
+ redtLog.Tab[0] := hcLog.Sections[0].Width;
+ redtLog.Tab[1] := hcLog.Sections[0].Width + hcLog.Sections[1].Width;
+
+ FFilesList := TStringList.Create;
+
+ Left := Screen.WorkAreaRect.Right - Width;
+ Top := Screen.WorkAreaRect.Bottom - Height;    
+
+ Caption := Caption + ' ' + GetSelfVersion();
+ TrayIcon.Hint := TrayIcon.Hint + ' ' + GetSelfVersion();
+
+ ReloadConfig();
+end;
+
  // Загрузка параметров из конфигурационного файла
- FSettings := TIniFile.Create(ExtractFilePath(Application.ExeName) + 'BMachine.ini');
+procedure TfrmMain.ReloadConfig;
+var
+  tAutostart,
+  tShowRar,
+  tTopMost  : Integer;
+  tFHandle  : THandle;
+begin
+ FConfigFile := ExtractFilePath(Application.ExeName) + 'BMachine.ini';
+ FSettings := TIniFile.Create(FConfigFile);
  FFilesFolder    := FSettings.ReadString('path', 'files_folder', '');
  FArchivesFolder := FSettings.ReadString('path', 'archives_folder', '');
  FRarPath        := FSettings.ReadString('system', 'rar_path', '');
@@ -93,8 +125,12 @@ begin
  FAutostart      := tAutostart <> 0;
  tShowRar        := FSettings.ReadInteger('system', 'show_rar_mode', 0);
  FShowRar        := tShowRar <> 0;
+ tTopMost        := FSettings.ReadInteger('system', 'topmost', 0);
+ if tTopMost <> 0 then FormStyle := fsStayOnTop;
  FLogLevel       := FSettings.ReadInteger('system', 'loglevel', 7);
  FBaloonTime     := FSettings.ReadInteger('system', 'ballon_time', 10);
+ FSettings.Free;
+
  if FBaloonTime < 10 then FBaloonTime := 10;
  if FBaloonTime > 60 then FBaloonTime := 60;
 
@@ -103,17 +139,21 @@ begin
 
  CheckAutostart(FAutostart);
 
- redtLog.TabCount := 2;
- redtLog.Tab[0] := hcLog.Sections[0].Width;
- redtLog.Tab[1] := hcLog.Sections[0].Width + hcLog.Sections[1].Width;
-
- if not FileExists(FRarPath) then
+  if not FileExists(FRarPath) then
    AddLogLine(0, 'E', 'Can''t find RAR executable file, monitor is not started');
  if not DirectoryExists(FFilesFolder) then
    AddLogLine(0, 'E', 'Files folder is not found, monitor is not started');
  if not DirectoryExistsEx(FArchivesFolder) then
    AddLogLine(0, 'E', 'Dest folder for archives is not found, monitor is not started');
 
+ // Запомним дату изменения файла настроек
+ tFHandle := FileOpen(FConfigFile, fmOpenRead  or fmShareDenyNone);
+ if tFHandle <> INVALID_HANDLE_VALUE then
+   begin
+     FConfigFileDate := FileGetDate(tFHandle);
+     CloseHandle(tFHandle);
+   end;
+   
  if FileExists(FRarPath) and
     DirectoryExists(FFilesFolder) and
     DirectoryExistsEx(FArchivesFolder) then
@@ -122,18 +162,14 @@ begin
         tmrArchive.Enabled := True;
         DirMon.Path := FFilesFolder;
         DirMon.Active := True;
+        AddLogLine(2, 'I', 'Load settings and start monitor');
+        TrayIcon.IconList := ilProgress;
+        TrayIcon.CycleIcons := False;
       end else
       begin
         TrayIcon.IconList := ilError;
         TrayIcon.CycleIcons := True;
       end;
-
- FFilesList := TStringList.Create;
-
- Left := Screen.WorkAreaRect.Right - Width;
- Top := Screen.WorkAreaRect.Bottom - Height;    
-
- Caption := Caption + ' ' +GetSelfVersion();
 end;
 
 procedure TfrmMain.CheckAutostart(Autostart: Boolean);
@@ -328,8 +364,8 @@ end;
 procedure TfrmMain.miShowHideClick(Sender: TObject);
 begin
  frmMain.Visible := not frmMain.Visible;
- if frmMain.Visible then miShowHide.Caption := 'Скрыть лог'
-   else miShowHide.Caption := 'Показать лог';
+ if frmMain.Visible then miShowHide.Caption := 'Hide log'
+   else miShowHide.Caption := 'Show log';
 end;
 
 procedure TfrmMain.TrayIconStartup(Sender: TObject;
@@ -370,6 +406,28 @@ begin
  tmrProgress.Enabled := False;
 end;
 
+procedure TfrmMain.miOpenFFClick(Sender: TObject);
+begin
+ ShellExecute(handle, 'open', PChar(FFilesFolder), nil, nil, SW_SHOWNORMAL);
+end;
 
+procedure TfrmMain.miOpenBFClick(Sender: TObject);
+begin
+ ShellExecute(handle, 'open', PChar(FArchivesFolder), nil, nil, SW_SHOWNORMAL);
+end;
+
+procedure TfrmMain.tmrConfigTimer(Sender: TObject);
+var
+  tFHandle : THandle;
+begin
+ // Если дата последний модификации файла настроек изменилась - перезагрузим настройки
+ tFHandle := FileOpen(FConfigFile, fmOpenRead  or fmShareDenyNone);
+ if tFHandle <> INVALID_HANDLE_VALUE then
+   begin
+     if FileGetDate(tFHandle) > FConfigFileDate then ReloadConfig();
+     CloseHandle(tFHandle);
+   end;
+
+end;
 
 end.
