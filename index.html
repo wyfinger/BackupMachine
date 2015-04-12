@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Backup Machine : backup archive rar delphi">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Backup Machine</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/wyfinger/BackupMachine">View on GitHub</a>
+
+          <h1 id="project_title">Backup Machine</h1>
+          <h2 id="project_tagline">backup archive rar delphi</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/wyfinger/BackupMachine/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/wyfinger/BackupMachine/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a id="backup-machine" class="anchor" href="#backup-machine" aria-hidden="true"><span class="octicon octicon-link"></span></a>Backup Machine</h1>
+
+<p><em>Моя система бекапа локальных файлов</em> </p>
+
+<p>Программа для бекапа не очень часто меняющихся данных.</p>
+
+<p>Особенностями программы является следующее:</p>
+
+<ol>
+<li>Сохранение всех версий файлов</li>
+<li>Использование RAR для архивирования</li>
+<li>Простой как три копейки и маленький клиент</li>
+</ol>
+
+<p>Схема работы следующая: клиент программы сидит постоянно в трее (есть возможность прописать себя в автозапуск) и мониторит изменения файлов в целевом каталоге. Таким образом составляется список изменившихся файлов. Раз в 5 минут (по умолчанию, время настраиваемо) программа запускает в скрытом режиме RAR и передает ему список изменившихся файлов. RAR запускается со специально сформированной командной строкой, которая по умолчанию создает ежедневные архивы с именем, содержащем дату. В эти архивы помещаются изменившиеся файлы с сохранением их предыдущих версий, поэтому если Вы, например, работаете 2 часа с одним документом все его версии будут сохранены в архиве. Также используются другие хитрости RAR 5, например сохранение дубликатов файлов как символических ссылок, это позволяет уменьшить размер архивов.</p>
+
+<p><strong>Предостережение</strong></p>
+
+<p>На данный момент система в статусе alpha, пользуйтесь на свой страх и риск, смотрите исходники.</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Backup Machine maintained by <a href="https://github.com/wyfinger">wyfinger</a></p>
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
