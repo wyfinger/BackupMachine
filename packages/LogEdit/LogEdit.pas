@@ -147,43 +147,43 @@ end;
 procedure TLogEdit.WMKeyDown(var Message: TWMKeyDown);
 begin
  inherited;
- //HideCaret(Handle);
- //DestroyCaret;
+ HideCaret(Handle);
+ DestroyCaret;
 end;
 
 procedure TLogEdit.WMLButtonDown(var Message: TWMLButtonDown);
 begin
  inherited;
- //HideCaret(Handle);
- //DestroyCaret;
+ HideCaret(Handle);
+ DestroyCaret;
 end;
 
 procedure TLogEdit.WMMButtonDown(var Message: TWMMButtonDown);
 begin
  inherited;
- //HideCaret(Handle);
- //DestroyCaret;
+ HideCaret(Handle);
+ DestroyCaret;
 end;
 
 procedure TLogEdit.WMRButtonDown(var Message: TWMRButtonDown);
 begin
  inherited;
- //HideCaret(Handle);
- //DestroyCaret;
+ HideCaret(Handle);
+ DestroyCaret;
 end;
 
 procedure TLogEdit.WMSetCursor(var Message: TWMSetCursor);
 begin
  inherited;
- //HideCaret(Handle);
- //DestroyCaret;
+ HideCaret(Handle);
+ DestroyCaret;
 end;
 
 procedure TLogEdit.WMSetFocus(var Message: TWMSetFocus);
 begin
  inherited;
- //HideCaret(Handle);
- //DestroyCaret;
+ HideCaret(Handle);
+ DestroyCaret;
 end;
 
 
