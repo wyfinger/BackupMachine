@@ -1,7 +1,7 @@
 object frmMain: TfrmMain
   Left = 251
   Top = 124
-  Width = 475
+  Width = 700
   Height = 275
   Caption = 'Backup Machine Log'
   Color = clBtnFace
@@ -18,7 +18,7 @@ object frmMain: TfrmMain
   object hcLog: THeaderControl
     Left = 0
     Top = 0
-    Width = 459
+    Width = 684
     Height = 17
     FullDrag = False
     Sections = <
@@ -55,7 +55,7 @@ object frmMain: TfrmMain
   object redtLog: TLogEdit
     Left = 0
     Top = 17
-    Width = 459
+    Width = 684
     Height = 220
     Cursor = crArrow
     Align = alClient
@@ -64,6 +64,7 @@ object frmMain: TfrmMain
     ScrollBars = ssBoth
     TabOrder = 2
     WordWrap = False
+    OnHyperlinkClicked = redtLogHyperlinkClicked
   end
   object tmrArchive: TTimer
     Interval = 30000
@@ -146,7 +147,7 @@ object frmMain: TfrmMain
     Left = 80
     Top = 80
     Bitmap = {
-      494C010104000900040010001000FFFFFFFFFF00FFFFFFFFFFFFFFFF424D3600
+      494C010104000900040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000003000000001002000000000000030
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -546,7 +547,8 @@ object frmMain: TfrmMain
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
-      00000000000000000000000000000000}
+      0000000000000000000000000000000000000000000000000000000000000000
+      000000000000}
   end
   object ilArchive: TImageList
     Left = 112
@@ -1364,6 +1366,7 @@ object frmMain: TfrmMain
   end
   object tmrProgress: TTimer
     Enabled = False
+    Interval = 900
     OnTimer = tmrProgressTimer
     Left = 16
     Top = 80
@@ -1373,5 +1376,17 @@ object frmMain: TfrmMain
     OnTimer = tmrConfigTimer
     Left = 16
     Top = 112
+  end
+  object httpGet: THTTPGet
+    AcceptTypes = '*/*'
+    Agent = 'UtilMind HTTPGet'
+    BinaryData = False
+    URL = 'http://wyfinger.github.io/BackupMachine/vers.html'
+    UseCache = False
+    WaitThread = False
+    OnDoneString = httpGetDoneString
+    OnError = httpGetError
+    Left = 144
+    Top = 80
   end
 end

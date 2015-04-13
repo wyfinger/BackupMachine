@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ExtCtrls, DirMon, IniFiles, Registry, process, CoolTrayIcon,
-  Menus, ShellAPI, ImgList, ComCtrls, RichEdit, LogEdit;
+  Menus, ShellAPI, ImgList, ComCtrls, RichEdit, LogEdit, WinInet, HTTPGet, StrUtils;
 
 type
   TfrmMain = class(TForm)
@@ -29,6 +29,7 @@ type
     miOpenFF: TMenuItem;
     miOpenBF: TMenuItem;
     tmrConfig: TTimer;
+    httpGet: THTTPGet;
     procedure DirMonCreated(Sender: TObject; FileName: String);
     procedure DirMonDeleted(Sender: TObject; FileName: String);
     procedure DirMonModified(Sender: TObject; FileName: String);
@@ -48,6 +49,10 @@ type
     procedure miOpenFFClick(Sender: TObject);
     procedure miOpenBFClick(Sender: TObject);
     procedure tmrConfigTimer(Sender: TObject);
+    procedure httpGetDoneString(Sender: TObject; Result: String);
+    procedure httpGetError(Sender: TObject);
+    procedure redtLogHyperlinkClicked(Sender: TObject; cpMin,
+      cpMax: Integer; const lpstrText: String);
   protected
     { Protected declarations }
     FSettings  : TIniFile;
@@ -61,6 +66,7 @@ type
     procedure AddLogLine(Level: Byte; Tag, Description: string);
     procedure AnimateProgress;
     procedure ReloadConfig();
+    procedure GetProxyData(var ProxyEnabled: boolean; var ProxyServer: string; var ProxyPort: integer);
   public
     { Public declarations }
     FConfigFile     : string;
@@ -109,7 +115,8 @@ procedure TfrmMain.ReloadConfig;
 var
   tAutostart,
   tShowRar,
-  tTopMost  : Integer;
+  tTopMost,
+  tCheckUpd : Integer;
   tFHandle  : THandle;
 begin
  FConfigFile := ExtractFilePath(Application.ExeName) + 'BMachine.ini';
@@ -127,6 +134,8 @@ begin
  FShowRar        := tShowRar <> 0;
  tTopMost        := FSettings.ReadInteger('system', 'topmost', 0);
  if tTopMost <> 0 then FormStyle := fsStayOnTop;
+ tCheckUpd       := FSettings.ReadInteger('system', 'check_updates', 0);
+ if tCheckUpd <> 0 then httpGet.GetString;
  FLogLevel       := FSettings.ReadInteger('system', 'loglevel', 7);
  FBaloonTime     := FSettings.ReadInteger('system', 'ballon_time', 10);
  FSettings.Free;
@@ -170,6 +179,62 @@ begin
         TrayIcon.IconList := ilError;
         TrayIcon.CycleIcons := True;
       end;
+end;
+
+procedure TfrmMain.httpGetDoneString(Sender: TObject; Result: String);
+var
+  v, m           : string;
+  v1, v2, v3, v4 : Integer;
+  m1, m2, m3, m4 : Integer;
+  p1, p2         : Integer;
+  link, msg      : string;
+  spos           : Integer;
+begin
+ if Length(Result) = 0 then Exit;
+ try
+   p1 := Pos(':', Result);
+   p2 := Pos(#13, Result);
+   if p2 = 0 then p2 := Pos(#10, Result);
+   link := Copy(Result, p1+1, p2-p1-1);
+   // версия на сервере
+   v := Copy(Result, 1, p1-1);
+   // наша версия
+   m := GetSelfVersion();
+   v1 := Pos('.', v);
+   v2 := PosEx('.', v, v1+1);
+   v3 := PosEx('.', v, v2+1);
+   v4 := StrToInt(Copy(v, v3+1, 3));
+   v3 := StrToInt(Copy(v, v2+1, v3-v2-1));
+   v2 := StrToInt(Copy(v, v1+1, v2-v1-1));
+   v1 := StrToInt(Copy(v, 0, v1-1));
+   v1 := v4 + v3*1000 + v2 * 100000 + v1 * 10000000;
+   m1 := Pos('.', m);
+   m2 := PosEx('.', m, m1+1);
+   m3 := PosEx('.', m, m2+1);
+   m4 := StrToInt(Copy(m, m3+1, 3));
+   m3 := StrToInt(Copy(m, m2+1, m3-m2-1));
+   m2 := StrToInt(Copy(m, m1+1, m2-m1-1));
+   m1 := StrToInt(Copy(m, 0, m1-1));
+   m1 := m4 + m3*1000 + m2 * 100000 + m1 * 10000000;
+   if (v1 > m1) then
+     begin
+       AddLogLine(2, 'U', 'New version '+ v +' is avaible: ');
+       // хак - удалим перенос стоки в конце
+       spos := Length(redtLog.Text)-2;  // #13#10
+       redtLog.Lines[redtLog.Lines.Count-1] := redtLog.Lines[redtLog.Lines.Count-1] + link;
+       redtLog.SelStart := spos;
+       redtLog.SelLength := Length(link);
+       redtLog.LinkSelection(true);
+       redtLog.SelLength := 0;
+     end;
+ except
+   AddLogLine(0, 'E', 'Update check error, response is received, but it is corrupted');
+ end;
+end;
+
+procedure TfrmMain.httpGetError(Sender: TObject);
+begin
+ AddLogLine(0, 'E', 'Can''t check updates');
 end;
 
 procedure TfrmMain.CheckAutostart(Autostart: Boolean);
@@ -312,6 +377,47 @@ begin
    end;
 end;
 
+procedure TfrmMain.GetProxyData(var ProxyEnabled: boolean; var ProxyServer: string; var ProxyPort: integer);
+var
+  ProxyInfo: PInternetProxyInfo;
+  Len: LongWord;
+  i, j: integer;
+begin
+  Len := 4096;
+  ProxyEnabled := false;
+  GetMem(ProxyInfo, Len);
+  try
+    if InternetQueryOption(nil, INTERNET_OPTION_PROXY, ProxyInfo, Len)
+    then
+      if ProxyInfo^.dwAccessType = INTERNET_OPEN_TYPE_PROXY then
+      begin
+        ProxyEnabled:= True;
+        ProxyServer := ProxyInfo^.lpszProxy;
+        showmessage('!');
+      end
+  finally
+    FreeMem(ProxyInfo);
+  end;
+ 
+  if ProxyEnabled and (ProxyServer <> '') then
+  begin
+    i := Pos('http=', ProxyServer);
+    if (i > 0) then
+    begin
+      Delete(ProxyServer, 1, i+5);
+      j := Pos(';', ProxyServer);
+      if (j > 0) then
+        ProxyServer := Copy(ProxyServer, 1, j-1);
+    end;
+    i := Pos(':', ProxyServer);
+    if (i > 0) then
+    begin
+      ProxyPort := StrToIntDef(Copy(ProxyServer, i+1, Length(ProxyServer)-i), 0);
+      ProxyServer := Copy(ProxyServer, 1, i-1)
+    end
+  end;
+end;
+
 procedure TfrmMain.tmrArchiveTimer(Sender: TObject);
 begin
  if (FFilesList.Count > 0) and not Process.Active then
@@ -321,6 +427,8 @@ begin
        FFilesList.SaveToFile(FArchivesFolder+'files.lst');
      except
        AddLogLine(0, 'E', 'Can''t save file list in dest directory');
+       TrayIcon.IconList := ilError;
+       TrayIcon.CycleIcons := True;
        Exit;
      end;
      TrayIcon.IconList := ilArchive;
@@ -427,7 +535,12 @@ begin
      if FileGetDate(tFHandle) > FConfigFileDate then ReloadConfig();
      CloseHandle(tFHandle);
    end;
+end;
 
+procedure TfrmMain.redtLogHyperlinkClicked(Sender: TObject; cpMin,
+  cpMax: Integer; const lpstrText: String);
+begin
+  ShellExecute(handle, 'open', PChar(lpstrText), nil, nil, SW_SHOWNORMAL);
 end;
 
 end.
