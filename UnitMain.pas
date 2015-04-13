@@ -511,6 +511,7 @@ end;
 procedure TfrmMain.tmrProgressTimer(Sender: TObject);
 begin
  TrayIcon.CycleIcons := False;
+ TrayIcon.IconIndex := 0;
  tmrProgress.Enabled := False;
 end;
 
