@@ -440,6 +440,14 @@ begin
      Process.Execute;
      FLastFile := '';
    end;
+ // iss#12
+ // if archive process is active than twice the timer interval
+ if Process.Active then
+   begin
+     AddLogLine(0, 'D', 'Archive process is active, change archive interval to ' +
+       IntToStr(Trunc(2 * tmrArchive.Interval / 60000)) + ' min');
+     tmrArchive.Interval := 2 * tmrArchive.Interval;
+   end;
 end;
 
 procedure TfrmMain.ProcessFinished(Sender: TObject; ExitCode: Cardinal);
@@ -529,7 +537,7 @@ procedure TfrmMain.tmrConfigTimer(Sender: TObject);
 var
   tFHandle : THandle;
 begin
- // Если дата последний модификации файла настроек изменилась - перезагрузим настройки
+ // reload config if it changed
  tFHandle := FileOpen(FConfigFile, fmOpenRead  or fmShareDenyNone);
  if tFHandle <> INVALID_HANDLE_VALUE then
    begin
