@@ -1,6 +1,7 @@
-package LogEditPack;
+package TProcessD7;
 
 {$R *.res}
+{$R 'process.dcr'}
 {$ALIGN 8}
 {$ASSERTIONS ON}
 {$BOOLEVAL OFF}
@@ -29,6 +30,6 @@ requires
   vcl;
 
 contains
-  LogEdit in 'LogEdit.pas';
+  process in 'process.pas';
 
 end.

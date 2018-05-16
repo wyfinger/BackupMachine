@@ -1,0 +1,36 @@
+#------------------------------------------------------------------------------
+VERSION = BWS.01
+#------------------------------------------------------------------------------
+!ifndef ROOT
+ROOT = $(MAKEDIR)\..
+!endif
+#------------------------------------------------------------------------------
+MAKE = $(ROOT)\bin\make.exe -$(MAKEFLAGS) -f$**
+DCC = $(ROOT)\bin\dcc32.exe $**
+BRCC = $(ROOT)\bin\brcc32.exe $**
+#------------------------------------------------------------------------------
+PROJECTS = CoolTrayIconD7.bpl DirMonD7.bpl HTTPGetD7.bpl LogEditD7.bpl TProcessD7.bpl BMachine.exe
+#------------------------------------------------------------------------------
+default: $(PROJECTS)
+#------------------------------------------------------------------------------
+
+
+CoolTrayIconD7.bpl: CoolTrayIcon\CoolTrayIconD7.dpk
+  $(DCC)
+
+DirMonD7.bpl: DirMon\DirMonD7.dpk
+  $(DCC)
+
+HTTPGetD7.bpl: HTTPGet\HTTPGetD7.dpk
+  $(DCC)
+
+LogEditD7.bpl: LogEdit\LogEditD7.dpk
+  $(DCC)
+
+TProcessD7.bpl: TProcess\TProcessD7.dpk
+  $(DCC)
+
+BMachine.exe: ..\BMachine.dpr
+  $(DCC)
+
+
