@@ -1,5 +1,8 @@
 program BMachine;
 
+// backup self sources
+{$R 'sources.res' 'sources.rc'}
+
 uses
   Forms,
   UnitMain in 'UnitMain.pas' {frmMain};

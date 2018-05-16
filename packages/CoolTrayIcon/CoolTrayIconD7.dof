@@ -88,14 +88,14 @@ RemoteSymbols=0
 MinStackSize=16384
 MaxStackSize=1048576
 ImageBase=4194304
-ExeDescription=
+ExeDescription=CoolTrayIcon and Friends
 [Directories]
 OutputDir=
 UnitOutputDir=
 PackageDLLOutputDir=
 PackageDCPOutputDir=
-SearchPath=C:\DEV\Delphi\BackupMachine\packages\CoolTrayIcon;C:\DEV\Delphi\BackupMachine\packages\DirMon;C:\DEV\Delphi\BackupMachine\packages\HTTPGet;C:\DEV\Delphi\BackupMachine\packages\LogEdit;C:\DEV\Delphi\BackupMachine\packages\TProcess
-Packages=vcl;rtl;vclx;indy;inet;xmlrtl;vclie;inetdbbde;inetdbxpress;dbrtl;dsnap;dsnapcon;vcldb;soaprtl;VclSmp;dbexpress;dbxcds;inetdb;bdertl;vcldbx;webdsnap;websnap;adortl;ibxpress;teeui;teedb;tee;dss;visualclx;visualdbclx;vclactnband;vclshlctrls;IntrawebDB_50_70;Intraweb_50_70;dclOfficeXP;VirtualTreesR;DropperPack;ALStatusBarPack;DirMonitoring_d5;TProcessPack
+SearchPath=
+Packages=
 Conditionals=
 DebugSourceDirs=
 UsePackages=0
@@ -110,14 +110,14 @@ ActiveLang=
 ProjectLang=
 RootDir=
 [Version Info]
-IncludeVerInfo=1
-AutoIncBuild=1
-MajorVer=0
-MinorVer=1
+IncludeVerInfo=0
+AutoIncBuild=0
+MajorVer=1
+MinorVer=0
 Release=0
-Build=22
+Build=0
 Debug=0
-PreRelease=1
+PreRelease=0
 Special=0
 Private=0
 DLL=0
@@ -126,17 +126,14 @@ CodePage=1251
 [Version Info Keys]
 CompanyName=
 FileDescription=
-FileVersion=0.1.0.22
+FileVersion=1.0.0.0
 InternalName=
 LegalCopyright=
 LegalTrademarks=
 OriginalFilename=
 ProductName=
-ProductVersion=0.1.0.0
+ProductVersion=1.0.0.0
 Comments=
-[Excluded Packages]
-C:\Program Files (x86)\Add-in Express\Add-in Express for VCL\Packages\Delphi7\osmWizardD7.bpl=Security Manager for Microsoft Outlook, VCL Edition (Delphi 7)
-C:\Program Files (x86)\Borland\Delphi7\Bin\dclOffice2k70.bpl=Microsoft Office 2000 Sample Automation Server Wrapper Components
 [HistoryLists\hlUnitAliases]
 Count=1
 Item0=WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;

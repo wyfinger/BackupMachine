@@ -70,11 +70,11 @@ type
   public
     { Public declarations }
     FConfigFile     : string;
-    FFilesFolder    : string;   // Что архивировать
-    FArchivesFolder : string;   // Куда архивировать
-    FRarPath        : string;   // Путь к RAR
-    FCommand        : string;   // Параметры
-    FPeriod         : Integer;  // Минимальная периодичность
+    FFilesFolder    : string;   // what
+    FArchivesFolder : string;   // where
+    FRarPath        : string;   // RAR path
+    FCommand        : string;   // params
+    FPeriod         : Integer;  // min period
     FAutostart      : Boolean;
     FShowRar        : Boolean;
     FLogLevel       : Integer;
@@ -110,7 +110,7 @@ begin
  ReloadConfig();
 end;
 
- // Загрузка параметров из конфигурационного файла
+// Load configuration file
 procedure TfrmMain.ReloadConfig;
 var
   tAutostart,
@@ -219,7 +219,7 @@ begin
    if (v1 > m1) then
      begin
        AddLogLine(2, 'U', 'New version '+ v +' is avaible: ');
-       // хак - удалим перенос стоки в конце
+       // hack - delete CrLr at the end
        spos := Length(redtLog.Text)-2;  // #13#10
        redtLog.Lines[redtLog.Lines.Count-1] := redtLog.Lines[redtLog.Lines.Count-1] + link;
        redtLog.SelStart := spos;
@@ -271,7 +271,7 @@ begin
    end;
 end;
 
-// Проверка существования папки в том числе и в сети
+// check folder exists
 function TfrmMain.DirectoryExistsEx(Directory: string): Boolean;
 var
   sss : TWIN32FindData;
@@ -285,7 +285,7 @@ begin
  Windows.FindClose(f);
 end;
 
-// Добавление строки в лог
+// add string line to the log
 procedure TfrmMain.AddLogLine(Level: Byte; Tag, Description: string);
 var
   DateStr: string;
@@ -296,17 +296,17 @@ begin
  redtLog.SelLength := 0;
  with redtLog.SelAttributes do
    begin
-     if Level = 0 then  // ошибки
+     if Level = 0 then  // errors
        begin
          Color := clRed;
          Style := [];
        end;
-     if Level = 1 then  // события монитора
+     if Level = 1 then  // monitoring
        begin
          Color := clWindowText;
          Style := [];
        end;
-     if Level = 2 then  // запуск rar
+     if Level = 2 then  // srart RAR process
        begin
          Color := clWindowText;
          Style := [fsBold];
@@ -314,20 +314,20 @@ begin
    end;
  redtLog.Lines.Add('  '+ Tag +#9+ DateStr +#9+ Description);
  redtLog.ScrollBy(0, 999);
- // Всплывающие сообщения
+ // popups message
  if ((FLogLevel and 4) = 4) and (Level = 0) then
    TrayIcon.ShowBalloonHint('Error', Description, bitError, FBaloonTime);
  if ((FLogLevel and 8) = 8) and (Level = 0) then
    TrayIcon.ShowBalloonHint('Archive', Description, bitInfo, FBaloonTime);
 end;
 
-// Запуск анимации иконки при изменениях файлов
+// icon animation if files changed
 procedure TfrmMain.AnimateProgress;
 begin
  if TrayIcon.IconList = ilError then Exit;
  TrayIcon.IconList := ilProgress;
  TrayIcon.CycleIcons := True;
- tmrProgress.Enabled := False; // сбрасываем таймер
+ tmrProgress.Enabled := False; // reset timer
  tmrProgress.Enabled := True;
 end;
 
