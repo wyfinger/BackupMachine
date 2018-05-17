@@ -5,7 +5,8 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ExtCtrls, DirMon, IniFiles, Registry, process, CoolTrayIcon,
-  Menus, ShellAPI, ImgList, ComCtrls, RichEdit, LogEdit, WinInet, HTTPGet, StrUtils;
+  Menus, ShellAPI, ImgList, ComCtrls, RichEdit, LogEdit, WinInet, HTTPGet, StrUtils,
+  pngimage;
 
 type
   TfrmMain = class(TForm)
@@ -30,6 +31,7 @@ type
     miOpenBF: TMenuItem;
     tmrConfig: TTimer;
     httpGet: THTTPGet;
+    imgSource: TImage;
     procedure DirMonCreated(Sender: TObject; FileName: String);
     procedure DirMonDeleted(Sender: TObject; FileName: String);
     procedure DirMonModified(Sender: TObject; FileName: String);
@@ -67,6 +69,7 @@ type
     procedure AnimateProgress;
     procedure ReloadConfig();
     procedure GetProxyData(var ProxyEnabled: boolean; var ProxyServer: string; var ProxyPort: integer);
+    procedure PrepareIcons(bgColor: TColor);
   public
     { Public declarations }
     FConfigFile     : string;
@@ -75,6 +78,8 @@ type
     FRarPath        : string;   // RAR path
     FCommand        : string;   // params
     FPeriod         : Integer;  // min period
+    FAppMark        : string;
+    FAppColor       : TColor;
     FAutostart      : Boolean;
     FShowRar        : Boolean;
     FLogLevel       : Integer;
@@ -108,6 +113,8 @@ begin
  TrayIcon.Hint := TrayIcon.Hint + ' ' + GetSelfVersion();
 
  ReloadConfig();
+
+ PrepareIcons(FAppColor);
 end;
 
 // Load configuration file
@@ -123,6 +130,17 @@ begin
  FSettings := TIniFile.Create(FConfigFile);
  FFilesFolder    := FSettings.ReadString('path', 'files_folder', '');
  FArchivesFolder := FSettings.ReadString('path', 'archives_folder', '');
+ FAppMark        := Trim(FSettings.ReadString('system', 'app_mark', ''));
+ if FAppMark <> '' then
+   begin
+     TrayIcon.Hint := TrayIcon.Hint + ' - ' + FAppMark;
+     Caption := Caption + ' - ' + FAppMark;
+   end;
+ try
+   FAppColor := StrToInt('$'+Trim(FSettings.ReadString('system', 'app_color', '009900')));
+ except
+   FAppColor := $009900;
+ end;
  FRarPath        := FSettings.ReadString('system', 'rar_path', '');
  FCommand        := FSettings.ReadString('system', 'command', '');
  FCommand        := StringReplace(FCommand, '%FF%', FFilesFolder, [rfReplaceAll]);
@@ -243,7 +261,7 @@ begin
    try
      RootKey := HKEY_CURRENT_USER;
      if OpenKey('\SOFTWARE\Microsoft\Windows\CurrentVersion\Run', true) then
-       if Autostart then WriteString('BackupMachine', Application.ExeName)
+       if Autostart then WriteString('BackupMachine_'+FAppMark, Application.ExeName)
          else DeleteValue('BackupMachine');
      CloseKey;
    finally
@@ -542,6 +560,42 @@ procedure TfrmMain.redtLogHyperlinkClicked(Sender: TObject; cpMin,
   cpMax: Integer; const lpstrText: String);
 begin
   ShellExecute(handle, 'open', PChar(lpstrText), nil, nil, SW_SHOWNORMAL);
+end;
+
+procedure TfrmMain.PrepareIcons(bgColor: TColor);
+var
+  ico : TBitmap;
+  r , c, i : Integer;
+begin
+ // prepare icons with bitmap
+ i := 0;
+ for r := 0 to imgSource.Width div 16 -1 do
+   for c := 0 to imgSource.Height div 16 -1 do
+     begin
+       ico := TBitmap.Create;
+       ico.Width := 16; ico.Height := 16;
+       ico.Canvas.Brush.Color := bgColor;
+       ico.Canvas.Pen.Color := bgColor;
+       ico.Canvas.FillRect(Rect(0,0,16,16));
+       // paste icon from image source
+       ico.Canvas.Draw(-16*c, -16*r, imgSource.Picture.Graphic);
+       // set to image lists
+       case i of
+         1..10 : ilArchive.Add(ico, nil);
+         11..12 : ilProgress.Add(ico, nil);
+         0,13 : begin                    // 2 icons
+                  ilError.Add(ico, nil);
+                  ilError.Add(ico, nil);
+                end;
+       end;
+       //
+       ico.Free;
+       //
+       i := i+1;
+     end;
+ // update window icon
+ ilProgress.GetIcon(0, Icon);
+ ilProgress.GetIcon(0, Application.Icon);
 end;
 
 end.
