@@ -115,11 +115,7 @@ AutoIncBuild=0
 MajorVer=0
 MinorVer=1
 Release=0
-<<<<<<< HEAD
 Build=30
-=======
-Build=29
->>>>>>> 8d6bece82810e9ee9bb76ea24e4f8598d6fd18e9
 Debug=0
 PreRelease=1
 Special=0
@@ -130,11 +126,7 @@ CodePage=1251
 [Version Info Keys]
 CompanyName=
 FileDescription=
-<<<<<<< HEAD
 FileVersion=0.1.0.30
-=======
-FileVersion=0.1.0.29
->>>>>>> 8d6bece82810e9ee9bb76ea24e4f8598d6fd18e9
 InternalName=
 LegalCopyright=
 LegalTrademarks=

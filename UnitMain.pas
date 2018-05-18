@@ -148,7 +148,7 @@ begin
  FCommand        := FSettings.ReadString('system', 'command', '');
  FCommand        := StringReplace(FCommand, '%FF%', FFilesFolder, [rfReplaceAll]);
  FCommand        := StringReplace(FCommand, '%AF%', FArchivesFolder, [rfReplaceAll]);
- FPeriod         := FSettings.ReadInteger('system', 'period', 5)*1000*60;  // пїЅпїЅпїЅпїЅпїЅпїЅ
+ FPeriod         := FSettings.ReadInteger('system', 'period', 5)*1000*60; 
  tAutostart      := FSettings.ReadInteger('system', 'autostart', 1);
  FAutostart      := tAutostart <> 0;
  tShowRar        := FSettings.ReadInteger('system', 'show_rar_mode', 0);
@@ -178,7 +178,7 @@ begin
 
  PrepareIcons(FAppColor);
 
- // Запомним дату изменения файла настроек
+ // save config file time (for reload of it changed)
  tFHandle := FileOpen(FConfigFile, fmOpenRead  or fmShareDenyNone);
  if tFHandle <> INVALID_HANDLE_VALUE then
    begin
