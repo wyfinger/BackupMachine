@@ -84,10 +84,8 @@ type
     FShowRar        : Boolean;
     FLogLevel       : Integer;
     FBaloonTime     : Integer;
-
     nxLogPixels     : Integer;
     nTextFontWidth  : Integer;
-
     FConfigFileDate : Integer;
   end;
 
@@ -115,7 +113,7 @@ begin
  ReloadConfig();
 end;
 
-// Load configuration file
+// load configuration file
 procedure TfrmMain.ReloadConfig;
 var
   tAutostart,
@@ -180,14 +178,14 @@ begin
 
  PrepareIcons(FAppColor);
 
- // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+ // Запомним дату изменения файла настроек
  tFHandle := FileOpen(FConfigFile, fmOpenRead  or fmShareDenyNone);
  if tFHandle <> INVALID_HANDLE_VALUE then
    begin
      FConfigFileDate := FileGetDate(tFHandle);
      CloseHandle(tFHandle);
    end;
-   
+
  if FileExists(FRarPath) and
     DirectoryExists(FFilesFolder) and
     DirectoryExistsEx(FArchivesFolder) then
@@ -221,9 +219,7 @@ begin
    p2 := Pos(#13, Result);
    if p2 = 0 then p2 := Pos(#10, Result);
    link := Copy(Result, p1+1, p2-p1-1);
-   // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
    v := Copy(Result, 1, p1-1);
-   // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
    m := GetSelfVersion();
    v1 := Pos('.', v);
    v2 := PosEx('.', v, v1+1);
@@ -269,7 +265,7 @@ begin
      RootKey := HKEY_CURRENT_USER;
      if OpenKey('\SOFTWARE\Microsoft\Windows\CurrentVersion\Run', true) then
        if Autostart then WriteString('BackupMachine_'+FAppMark, Application.ExeName)
-         else DeleteValue('BackupMachine');
+         else DeleteValue('BackupMachine_'+FAppMark);
      CloseKey;
    finally
      Free;
@@ -473,7 +469,7 @@ begin
      Process.Directory := FArchivesFolder;
      Process.Execute;
      FLastFile := '';
-   end;   
+   end;
 end;
 
 procedure TfrmMain.ProcessFinished(Sender: TObject; ExitCode: Cardinal);
@@ -577,6 +573,7 @@ procedure TfrmMain.redtLogHyperlinkClicked(Sender: TObject; cpMin,
 begin
   ShellExecute(handle, 'open', PChar(lpstrText), nil, nil, SW_SHOWNORMAL);
 end;
+
 
 procedure TfrmMain.PrepareIcons(bgColor: TColor);
 var

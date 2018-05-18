@@ -12,6 +12,7 @@ files_folder=E:\DEV\
 archives_folder=F:\Backups\Dev.time\
 
 [system]
+<<<<<<< HEAD
 
 ; instance mark (if you use more than one instance, need for autorun set)
 app_mark=main
@@ -20,6 +21,12 @@ app_mark=main
 app_color=f80ec9
 
 ; RAR.EXE path, RAR 5 required !!!
+=======
+app_mark=main
+app_color=ec3838
+
+; путь к rar
+>>>>>>> 8d6bece82810e9ee9bb76ea24e4f8598d6fd18e9
 rar_path=C:\Program Files\WinRAR\rar.exe
 
 ; main command (start RAR)
