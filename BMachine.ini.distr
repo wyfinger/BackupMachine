@@ -6,6 +6,9 @@ files_folder=D:\Wyfinger\
 archives_folder=G:\ARCHIV\Backup\Wyfinger\
 
 [system]
+app_mark=main
+app_color=ec3838
+
 ; путь к rar
 rar_path=C:\Program Files\WinRAR\rar.exe
 
