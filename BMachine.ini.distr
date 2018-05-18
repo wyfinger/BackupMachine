@@ -1,49 +1,68 @@
-[path]
-; что архивируем
-files_folder=D:\Wyfinger\
+; BackupMachine
+; https://github.com/wyfinger/BackupMachine
+; or open EXE file (BMachine.exe) as archive file in WinRar for see sources :)
+; 2018-05-18, Wyfinger
 
-; куда
-archives_folder=G:\ARCHIV\Backup\Wyfinger\
+[path]
+
+; work folder (folder to backup)
+files_folder=E:\DEV\
+
+; folder to backup archives
+archives_folder=F:\Backups\Dev.time\
 
 [system]
-; путь к rar
+
+; instance mark (if you use more than one instance, need for autorun set)
+app_mark=main
+
+; instance icon color (RGB) (that you can distinguish between instances)
+app_color=f80ec9
+
+; RAR.EXE path, RAR 5 required !!!
 rar_path=C:\Program Files\WinRAR\rar.exe
 
-; команда запуска rar
-; -ag добавить дату к имени
-; -dh открывать совместно используемые файлы.
-; -pbak пароль, чтобы антивирус не тупил
-; -oi1 архивировать дубликаты как ссылки
-; -qo+ добавить информацию для быстрого открытия архива
-; -ver сохранять предыдущие версии
-; -ed не добавлять пустые каталоги.
-; -ilog вести лог
+; main command (start RAR)
+; use this as template for backup every changes to daily separated archives.
+; -ag	add date to archive name
+; -dh	open shared files
+; -p	password (for antivirus)
+; -ma5	RAR 5 format
+; -m5   maximum compression (0..5)
+; -oi1	dublicates as link
+; -qo+	add info for fast open
+; -ver	save previous version of files
+; -ed	do not add free folders
+; -ilog	log file
+; -x	excludes (-x@exclude.lst sintaxis for excludes in external file)
 command=a "%AF%day_" -agYYYY-MM-DD -dh -oi1 -ver -pbak -ma5 -ilog"%AF%err.log" -x@exclude.lst @files.lst
 
-; минимальный период запуска архивирования в минутах
+; backup period in minutes (can increase if RAR is still active)
 period=5
 
-; 1 - поместить в автозапуск; 0 - удалить из автозапуска
-autostart=1
+; set autostart (if you use more than one instance set app_mark parameter)
+; 1 - yes, 0 - no
+ autostart=1
 
-; 1 - show; 0 - hide
-show_rar_mode=0  
+; show rar window (console, may need  for debug)
+; 1 - yes, 0 - no
+show_rar_mode=0
 
-; 1 - окно лога top most; 0 - обычный режим
+; log window topmost
+; 1 - yes, 0 - no
 topmost=1
 
-; Уровень глубины ведения лога и нотификаций
-; 0 - только сообщения об ошибках в логе (всегда)
-; 1 - изменения файлов в логе (иконка в трее будет мигать)
-; 2 - запуск архиватора и диагностические сообщения в логе (иконка в трее будет мигать)
-; 4 - ошибки в balloon tip
-; 8 - диагностические сообщения в balloon tip
-; Например 7 = 1 or 2 or 4 - ошибки отображаются в логе и balloon tip, изменения
-; файлов пишутся в лог
-loglevel=7
+; log information level
+; 0	errors only
+; 1	errors and files changes (icon in tray may blink)
+; 2	errors and archiver start (icon in tray may blink)
+; 4	errors in baloon tip
+; 8	archiver start in baloon tip
+; you can use boolean OR for it
+loglevel=15
 
-; время отображения всплывающих сообщений (10..60 секунд)
+; baloon tip time (10..60 second)
 ballon_time=10
 
-; проверка обновлений
-check_updates=1
+; check for updates
+check_updates=0

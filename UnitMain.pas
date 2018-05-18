@@ -110,11 +110,9 @@ begin
  Top := Screen.WorkAreaRect.Bottom - Height;    
 
  Caption := Caption + ' ' + GetSelfVersion();
- TrayIcon.Hint := TrayIcon.Hint + ' ' + GetSelfVersion();
+ TrayIcon.Hint := 'Backup Machine ' + GetSelfVersion();
 
  ReloadConfig();
-
- PrepareIcons(FAppColor);
 end;
 
 // Load configuration file
@@ -133,11 +131,18 @@ begin
  FAppMark        := Trim(FSettings.ReadString('system', 'app_mark', ''));
  if FAppMark <> '' then
    begin
-     TrayIcon.Hint := TrayIcon.Hint + ' - ' + FAppMark;
-     Caption := Caption + ' - ' + FAppMark;
+     TrayIcon.Hint := 'Backup Machine ' + GetSelfVersion() + ' - ' + FAppMark;
+     Caption := 'Backup Machine Log ' + GetSelfVersion() + ' - ' + FAppMark;
    end;
  try
-   FAppColor := StrToInt('$'+Trim(FSettings.ReadString('system', 'app_color', '009900')));
+   FAppColor := StrToInt('$'+Trim(UpperCase(FSettings.ReadString('system', 'app_color', '009900'))));
+   // BGR -> RGB :)
+   FAppColor := FAppColor or (FAppColor and $000000FF) shl 24; // X := b
+   FAppColor := FAppColor and $FFFFFF00;                       // b := a
+   FAppColor := FAppColor or (FAppColor and $00FF0000) shr 16;
+   FAppColor := FAppColor and $FF00FFFF;                       // a := X
+   FAppColor := FAppColor or (FAppColor and $FF000000) shr 8;
+   FAppColor := FAppColor and $00FFFFFF;    
  except
    FAppColor := $009900;
  end;
@@ -145,7 +150,7 @@ begin
  FCommand        := FSettings.ReadString('system', 'command', '');
  FCommand        := StringReplace(FCommand, '%FF%', FFilesFolder, [rfReplaceAll]);
  FCommand        := StringReplace(FCommand, '%AF%', FArchivesFolder, [rfReplaceAll]);
- FPeriod         := FSettings.ReadInteger('system', 'period', 5)*1000*60;  // минуты
+ FPeriod         := FSettings.ReadInteger('system', 'period', 5)*1000*60;  // пїЅпїЅпїЅпїЅпїЅпїЅ
  tAutostart      := FSettings.ReadInteger('system', 'autostart', 1);
  FAutostart      := tAutostart <> 0;
  tShowRar        := FSettings.ReadInteger('system', 'show_rar_mode', 0);
@@ -173,7 +178,9 @@ begin
  if not DirectoryExistsEx(FArchivesFolder) then
    AddLogLine(0, 'E', 'Dest folder for archives is not found, monitor is not started');
 
- // Запомним дату изменения файла настроек
+ PrepareIcons(FAppColor);
+
+ // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
  tFHandle := FileOpen(FConfigFile, fmOpenRead  or fmShareDenyNone);
  if tFHandle <> INVALID_HANDLE_VALUE then
    begin
@@ -214,9 +221,9 @@ begin
    p2 := Pos(#13, Result);
    if p2 = 0 then p2 := Pos(#10, Result);
    link := Copy(Result, p1+1, p2-p1-1);
-   // версия на сервере
+   // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
    v := Copy(Result, 1, p1-1);
-   // наша версия
+   // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
    m := GetSelfVersion();
    v1 := Pos('.', v);
    v2 := PosEx('.', v, v1+1);
@@ -438,6 +445,15 @@ end;
 
 procedure TfrmMain.tmrArchiveTimer(Sender: TObject);
 begin
+ // iss#12
+ // if archive process is active than twice the timer interval
+ if Process.Active then
+   begin
+     AddLogLine(0, 'D', 'Archive process is active, change archive interval to ' +
+       IntToStr(Trunc(2 * tmrArchive.Interval / 60000)) + ' min');
+     tmrArchive.Interval := 2 * tmrArchive.Interval;
+   end;
+ //  
  if (FFilesList.Count > 0) and not Process.Active then
    begin
      AddLogLine(2, 'A', 'Start RAR for archiving');
@@ -457,7 +473,7 @@ begin
      Process.Directory := FArchivesFolder;
      Process.Execute;
      FLastFile := '';
-   end;
+   end;   
 end;
 
 procedure TfrmMain.ProcessFinished(Sender: TObject; ExitCode: Cardinal);
@@ -547,7 +563,7 @@ procedure TfrmMain.tmrConfigTimer(Sender: TObject);
 var
   tFHandle : THandle;
 begin
- // Если дата последний модификации файла настроек изменилась - перезагрузим настройки
+ // reload config if it changed
  tFHandle := FileOpen(FConfigFile, fmOpenRead  or fmShareDenyNone);
  if tFHandle <> INVALID_HANDLE_VALUE then
    begin
@@ -596,6 +612,7 @@ begin
  // update window icon
  ilProgress.GetIcon(0, Icon);
  ilProgress.GetIcon(0, Application.Icon);
+ TrayIcon.IconList := ilProgress;
 end;
 
 end.

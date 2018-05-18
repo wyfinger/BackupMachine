@@ -303,7 +303,7 @@ object frmMain: TfrmMain
       0000000000000000000000000000000000000000000000000000000000000000
       000000000000000000000000000000000000000000000000000000000000}
     IconVisible = True
-    IconIndex = 0
+    IconIndex = -1
     PopupMenu = pmTray
     OnStartup = TrayIconStartup
     Left = 112
