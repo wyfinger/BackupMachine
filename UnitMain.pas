@@ -16,7 +16,7 @@ type
     TrayIcon: TCoolTrayIcon;
     pmTray: TPopupMenu;
     miShowHide: TMenuItem;
-    miSep2: TMenuItem;
+    N3: TMenuItem;
     miExit: TMenuItem;
     miConfig: TMenuItem;
     ilError: TImageList;
@@ -26,12 +26,15 @@ type
     redtLog: TLogEdit;
     ilProgress: TImageList;
     tmrProgress: TTimer;
-    miSep1: TMenuItem;
+    N2: TMenuItem;
     miOpenFF: TMenuItem;
     miOpenBF: TMenuItem;
     tmrConfig: TTimer;
     httpGet: THTTPGet;
     imgSource: TImage;
+    miStartNow: TMenuItem;
+    N1: TMenuItem;
+    miFullBackup: TMenuItem;
     procedure DirMonCreated(Sender: TObject; FileName: String);
     procedure DirMonDeleted(Sender: TObject; FileName: String);
     procedure DirMonModified(Sender: TObject; FileName: String);
@@ -55,6 +58,9 @@ type
     procedure httpGetError(Sender: TObject);
     procedure redtLogHyperlinkClicked(Sender: TObject; cpMin,
       cpMax: Integer; const lpstrText: String);
+    procedure miStartNowClick(Sender: TObject);
+    procedure miFullBackupClick(Sender: TObject);
+    procedure pmTrayPopup(Sender: TObject);
   protected
     { Protected declarations }
     FSettings  : TIniFile;
@@ -611,5 +617,36 @@ begin
  ilProgress.GetIcon(0, Application.Icon);
  TrayIcon.IconList := ilProgress;
 end;
+
+procedure TfrmMain.pmTrayPopup(Sender: TObject);
+begin
+ // if archive process is active - disable manual create backup
+ // menu items
+ miStartNow.Enabled := not Process.Active;
+ miFullBackup.Enabled := not Process.Active;
+end;
+
+procedure TfrmMain.miStartNowClick(Sender: TObject);
+begin
+ // Start backup now
+ tmrArchiveTimer(nil);
+ tmrArchive.Enabled := False;
+ tmrArchive.Enabled := True;
+end;
+
+procedure TfrmMain.miFullBackupClick(Sender: TObject);
+var
+  lstFull : TStringList;
+begin
+ // Create Full backup
+ if not MessageDlg('A you shure to create full backup now?'#13'It may take a long time.',
+   mtConfirmation, [mbYes, mbNo], -1) <> mrYes then Exit;
+ tmrArchive.Enabled := False;
+ // TODO: scan source folder in tread
+ // TODO: save files.lst
+ // TODO: starts rar process with "_full" postfix (need to parse -ag key in rar command settings)
+end;
+
+
 
 end.

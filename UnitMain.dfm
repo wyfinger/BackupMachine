@@ -1,6 +1,6 @@
 object frmMain: TfrmMain
-  Left = 349
-  Top = 168
+  Left = 249
+  Top = 136
   Width = 700
   Height = 275
   Caption = 'Backup Machine Log'
@@ -310,6 +310,7 @@ object frmMain: TfrmMain
     Top = 48
   end
   object pmTray: TPopupMenu
+    OnPopup = pmTrayPopup
     Left = 144
     Top = 48
     object miShowHide: TMenuItem
@@ -321,7 +322,18 @@ object frmMain: TfrmMain
       Caption = 'Settings'
       OnClick = miConfigClick
     end
-    object miSep1: TMenuItem
+    object N1: TMenuItem
+      Caption = '-'
+    end
+    object miStartNow: TMenuItem
+      Caption = 'Start backup now'
+      OnClick = miStartNowClick
+    end
+    object miFullBackup: TMenuItem
+      Caption = 'Create full backup'
+      OnClick = miFullBackupClick
+    end
+    object N2: TMenuItem
       Caption = '-'
     end
     object miOpenFF: TMenuItem
@@ -332,7 +344,7 @@ object frmMain: TfrmMain
       Caption = 'Open Backups folder'
       OnClick = miOpenBFClick
     end
-    object miSep2: TMenuItem
+    object N3: TMenuItem
       Caption = '-'
     end
     object miExit: TMenuItem
