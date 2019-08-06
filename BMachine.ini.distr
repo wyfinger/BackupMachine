@@ -1,7 +1,7 @@
 ; BackupMachine
 ; https://github.com/wyfinger/BackupMachine
 ; or open EXE file (BMachine.exe) as archive file in WinRar for see sources :)
-; 2018-05-18, Wyfinger
+; 2019-08-06, Wyfinger
 
 [path]
 
@@ -12,7 +12,6 @@ files_folder=E:\DEV\
 archives_folder=F:\Backups\Dev.time\
 
 [system]
-<<<<<<< HEAD
 
 ; instance mark (if you use more than one instance, need for autorun set)
 app_mark=main
@@ -21,12 +20,6 @@ app_mark=main
 app_color=f80ec9
 
 ; RAR.EXE path, RAR 5 required !!!
-=======
-app_mark=main
-app_color=ec3838
-
-; путь к rar
->>>>>>> 8d6bece82810e9ee9bb76ea24e4f8598d6fd18e9
 rar_path=C:\Program Files\WinRAR\rar.exe
 
 ; main command (start RAR)
@@ -49,7 +42,7 @@ period=5
 
 ; set autostart (if you use more than one instance set app_mark parameter)
 ; 1 - yes, 0 - no
- autostart=1
+autostart=1
 
 ; show rar window (console, may need  for debug)
 ; 1 - yes, 0 - no
@@ -73,3 +66,12 @@ ballon_time=10
 
 ; check for updates
 check_updates=0
+
+[users]
+
+; users list.
+; use symbol "," to separate users, can write user name with domain (like user@domain) or without it.
+; can use mask (like * or ? for example "user_?").
+; if white_users list used then black_users list is ignorred
+white_users=prim_miv,prim_gas,prim_ztn,prim_ikm,prim_kpp,prim_msv7,prim_mgr,prim_ast,prim_uda,prim_uoa
+black_users=

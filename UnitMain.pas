@@ -6,7 +6,7 @@ uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ExtCtrls, DirMon, IniFiles, Registry, process, CoolTrayIcon,
   Menus, ShellAPI, ImgList, ComCtrls, RichEdit, LogEdit, WinInet, HTTPGet, StrUtils,
-  pngimage;
+  pngimage, Masks, XPMan;
 
 type
   TfrmMain = class(TForm)
@@ -35,6 +35,7 @@ type
     miStartNow: TMenuItem;
     N1: TMenuItem;
     miFullBackup: TMenuItem;
+    XPManifest1: TXPManifest;
     procedure DirMonCreated(Sender: TObject; FileName: String);
     procedure DirMonDeleted(Sender: TObject; FileName: String);
     procedure DirMonModified(Sender: TObject; FileName: String);
@@ -71,11 +72,14 @@ type
     procedure CheckAutostart(Autostart: Boolean);
     function  GetSelfVersion(): string;
     function  DirectoryExistsEx(Directory: string): Boolean;
-    procedure AddLogLine(Level: Byte; Tag, Description: string);
+    function GetFileOwner(FileName: string): string;
+    procedure AddLogLine(Level: Byte; Tag, User, Description: string);
     procedure AnimateProgress;
     procedure ReloadConfig();
     procedure GetProxyData(var ProxyEnabled: boolean; var ProxyServer: string; var ProxyPort: integer);
     procedure PrepareIcons(bgColor: TColor);
+    function UserInList(UserName: string; List: TStringList): Boolean;
+    function NeedToProcess(FileName: string; var UserName: string): Boolean;
   public
     { Public declarations }
     FConfigFile     : string;
@@ -84,6 +88,8 @@ type
     FRarPath        : string;   // RAR path
     FCommand        : string;   // params
     FPeriod         : Integer;  // min period
+    FWhiteUsers     : TStringList;
+    FBlackUsers     : TStringList;
     FAppMark        : string;
     FAppColor       : TColor;
     FAutostart      : Boolean;
@@ -107,6 +113,8 @@ begin
  redtLog.TabCount := 2;
  redtLog.Tab[0] := hcLog.Sections[0].Width;
  redtLog.Tab[1] := hcLog.Sections[0].Width + hcLog.Sections[1].Width;
+ redtLog.Tab[2] := hcLog.Sections[0].Width + hcLog.Sections[1].Width + hcLog.Sections[2].Width;
+ redtLog.Tab[3] := redtLog.Tab[2];
 
  FFilesList := TStringList.Create;
 
@@ -165,7 +173,6 @@ begin
  if tCheckUpd <> 0 then httpGet.GetString;
  FLogLevel       := FSettings.ReadInteger('system', 'loglevel', 7);
  FBaloonTime     := FSettings.ReadInteger('system', 'ballon_time', 10);
- FSettings.Free;
 
  if FBaloonTime < 10 then FBaloonTime := 10;
  if FBaloonTime > 60 then FBaloonTime := 60;
@@ -173,14 +180,32 @@ begin
  if FShowRar then Process.ShowWindow := swShowNormal
    else Process.ShowWindow := swHide;
 
+ if FSettings.SectionExists('users') then
+   begin
+      // white
+      if FWhiteUsers <> nil then FWhiteUsers.Clear else FWhiteUsers := TStringList.Create;
+      if FSettings.ValueExists('users', 'white_users') then
+      FWhiteUsers.Delimiter := ',';
+      FWhiteUsers.DelimitedText := FSettings.ReadString('users', 'white_users', '');
+      // black
+      if FBlackUsers <> nil then FBlackUsers.Clear else FBlackUsers := TStringList.Create;
+      if FSettings.ValueExists('users', 'black_users') then
+      FBlackUsers.Delimiter := ',';
+      FBlackUsers.DelimitedText := FSettings.ReadString('users', 'black_users', '');
+      // white users matter
+      if FWhiteUsers.Count > 0 then FBlackUsers.Clear;
+   end;
+
+ FSettings.Free;
+
  CheckAutostart(FAutostart);
 
   if not FileExists(FRarPath) then
-   AddLogLine(0, 'E', 'Can''t find RAR executable file, monitor is not started');
+   AddLogLine(0, 'E', ' ', 'Can''t find RAR executable file, monitor is not started');
  if not DirectoryExists(FFilesFolder) then
-   AddLogLine(0, 'E', 'Files folder is not found, monitor is not started');
+   AddLogLine(0, 'E', ' ', 'Files folder is not found, monitor is not started');
  if not DirectoryExistsEx(FArchivesFolder) then
-   AddLogLine(0, 'E', 'Dest folder for archives is not found, monitor is not started');
+   AddLogLine(0, 'E', ' ', 'Dest folder for archives is not found, monitor is not started');
 
  PrepareIcons(FAppColor);
 
@@ -200,7 +225,7 @@ begin
         tmrArchive.Enabled := True;
         DirMon.Path := FFilesFolder;
         DirMon.Active := True;
-        AddLogLine(2, 'I', 'Load settings and start monitor');
+        AddLogLine(2, 'I', ' ', 'Load settings and start monitor');
         TrayIcon.IconList := ilProgress;
         TrayIcon.CycleIcons := False;
       end else
@@ -245,7 +270,7 @@ begin
    m1 := m4 + m3*1000 + m2 * 100000 + m1 * 10000000;
    if (v1 > m1) then
      begin
-       AddLogLine(2, 'U', 'New version '+ v +' is avaible: ');
+       AddLogLine(2, 'U', ' ','New version '+ v +' is avaible: ');
        // hack - delete CrLr at the end
        spos := Length(redtLog.Text)-2;  // #13#10
        redtLog.Lines[redtLog.Lines.Count-1] := redtLog.Lines[redtLog.Lines.Count-1] + link;
@@ -255,13 +280,13 @@ begin
        redtLog.SelLength := 0;
      end;
  except
-   AddLogLine(0, 'E', 'Update check error, response is received, but it is corrupted');
+   AddLogLine(0, 'E', ' ','Update check error, response is received, but it is corrupted');
  end;
 end;
 
 procedure TfrmMain.httpGetError(Sender: TObject);
 begin
- AddLogLine(0, 'E', 'Can''t check updates');
+ AddLogLine(0, 'E', ' ', 'Can''t check updates');
 end;
 
 procedure TfrmMain.CheckAutostart(Autostart: Boolean);
@@ -312,13 +337,90 @@ begin
  Windows.FindClose(f);
 end;
 
+function TfrmMain.GetFileOwner(FileName: string): string;
+var
+  SecDescr: PSecurityDescriptor;
+  SizeNeeded, SizeNeeded2: DWORD;
+  OwnerSID: PSID;
+  OwnerDefault: BOOL;
+  OwnerName, DomainName: PChar;
+  OwnerType: SID_NAME_USE;
+  Domain, Username: string;
+begin
+ // Получить владельца файла или папки
+ try
+   GetMem(SecDescr, 1024);  ZeroMemory(SecDescr, 1024);
+   GetMem(OwnerName, 1024);  ZeroMemory(OwnerName, 1024);
+   GetMem(DomainName, 1024);  ZeroMemory(DomainName, 1024);   
+   if GetFileSecurity(PChar(FileName), OWNER_SECURITY_INFORMATION, SecDescr, 1024, SizeNeeded) then
+     if GetSecurityDescriptorOwner(SecDescr, OwnerSID, OwnerDefault) then
+       SizeNeeded := 1024;
+   SizeNeeded2 := 1024;
+   if LookupAccountSID(nil, OwnerSID, OwnerName, SizeNeeded, DomainName, SizeNeeded2, OwnerType) then
+     Domain := DomainName;
+   Username := OwnerName;
+   FreeMem(SecDescr);
+   FreeMem(OwnerName);
+   FreeMem(DomainName);
+ except
+   Result := ' ';
+   Exit;
+ end;
+ Result := Username + '@' + Domain;
+end;
+
+function TfrmMain.UserInList(UserName: string; List: TStringList): Boolean;
+var
+  i : Integer;
+  UserNameShort: string;
+  Item : string;
+  ItemIsMask : Boolean;
+  ItemHaveDomain : Boolean;
+begin
+ Result := False;
+ UserName := LowerCase(Trim(UserName));
+ if (UserName = '') or (List = nil) or (List.Count = 0) then Exit;
+ UserNameShort := Copy(UserName, 1, Pos('@', UserName)-1);
+ for i := 0 to List.Count-1 do
+   begin
+     Item := LowerCase(Trim(List[i]));
+     ItemIsMask := (Pos('*', Item) > 0) or (Pos('?', Item) > 0);
+     ItemHaveDomain := (Pos('@', Item) > 0);
+     if not ItemHaveDomain then UserName := UserNameShort;
+     if (ItemIsMask and MatchesMask(UserName, Item)) or
+        (not ItemIsMask and (UserName = Item)) then
+         begin
+           Result := True;
+           Exit;
+         end;
+   end;            
+end;
+
+function TfrmMain.NeedToProcess(FileName: string; var UserName: string): Boolean;
+begin
+ UserName := Trim(GetFileOwner(FileName));
+ if UserName = '' then Exit; 
+ if FWhiteUsers.Count = 0 then
+   if FBlackUsers.Count = 0 then
+     Result := True                                   // all list is empty
+   else
+     Result := not UserInList(UserName, FBlackUsers)  // work by blacklist
+ else
+   Result := UserInList(UserName, FWhiteUsers);       // work by whilelist or it's impossible
+ UserName := Copy(UserName, 1, Pos('@', UserName)-1);
+end;
+
 // add string line to the log
-procedure TfrmMain.AddLogLine(Level: Byte; Tag, Description: string);
+procedure TfrmMain.AddLogLine(Level: Byte; Tag, User, Description: string);
 var
   DateStr: string;
+  Domain, Owner: string;
+  ss, sl : Integer;
 begin
  if not (FLogLevel and Level = Level) then Exit;
  DateTimeToString(DateStr, 'hh:mm:ss', Now());
+ ss := redtLog.SelStart;
+ sl := redtLog.SelLength;
  redtLog.SelStart := Length(redtLog.Lines.Text);
  redtLog.SelLength := 0;
  with redtLog.SelAttributes do
@@ -339,13 +441,15 @@ begin
          Style := [fsBold];
        end;
    end;
- redtLog.Lines.Add('  '+ Tag +#9+ DateStr +#9+ Description);
+ redtLog.Lines.Add('  '+ Tag +#9+ DateStr +#9+ User +#9+ Description);
  redtLog.ScrollBy(0, 999);
  // popups message
  if ((FLogLevel and 4) = 4) and (Level = 0) then
    TrayIcon.ShowBalloonHint('Error', Description, bitError, FBaloonTime);
  if ((FLogLevel and 8) = 8) and (Level = 0) then
    TrayIcon.ShowBalloonHint('Archive', Description, bitInfo, FBaloonTime);
+ redtLog.SelStart := ss;
+ redtLog.SelLength := sl;
 end;
 
 // icon animation if files changed
@@ -359,46 +463,64 @@ begin
 end;
 
 procedure TfrmMain.DirMonCreated(Sender: TObject; FileName: String);
+var
+  UserName : string;
 begin
  if (FileName <> FLastFile) and not DirectoryExists(FFilesFolder+FileName) and
    FileExists(FFilesFolder+FileName) then
    begin
-     AddLogLine(1, 'C', FFilesFolder+FileName);
-     FFilesList.Add(FFilesFolder+FileName);
+     if (FWhiteUsers.Count > 0) or (FBlackUsers.Count > 0) then
+     if NeedToProcess(FFilesFolder+FileName, UserName) then
+       begin
+         AddLogLine(1, 'C', UserName, FFilesFolder+FileName);
+         FFilesList.Add(FFilesFolder+FileName);
+       end;
      FLastFile := FileName;
      AnimateProgress();
    end;
 end;
 
 procedure TfrmMain.DirMonDeleted(Sender: TObject; FileName: String);
+var
+  UserName : string;
 begin
  if not DirectoryExists(FileName) then
    begin
-     AddLogLine(1, 'D', FFilesFolder+FileName);
+     if NeedToProcess(FileName, UserName) then
+       AddLogLine(1, 'D', UserName, FFilesFolder+FileName);
      AnimateProgress();
    end;
 end;
 
 procedure TfrmMain.DirMonModified(Sender: TObject; FileName: String);
+var
+  UserName : string;
 begin
  if (FileName <> FLastFile) and not DirectoryExists(FFilesFolder+FileName) and
    FileExists(FFilesFolder+FileName) then
    begin
-     AddLogLine(1, 'M', FFilesFolder+FileName);
-     FFilesList.Add(FFilesFolder+FileName);
+     if NeedToProcess(FFilesFolder+FileName, UserName) then
+       begin
+         AddLogLine(1, 'M', UserName, FFilesFolder+FileName);
+         FFilesList.Add(FFilesFolder+FileName);
+       end;
      FLastFile := FileName;
      AnimateProgress();
    end;
 end;
 
-procedure TfrmMain.DirMonRenamed(Sender: TObject; fromFileName,
-  toFileName: String);
+procedure TfrmMain.DirMonRenamed(Sender: TObject; fromFileName, toFileName: String);
+var
+  UserName : string;
 begin
  if (toFileName <> FLastFile) and not DirectoryExists(FFilesFolder+toFileName) and
    FileExists(FFilesFolder+toFileName) then
    begin
-     AddLogLine(1, 'R', FFilesFolder+toFileName);
-     FFilesList.Add(FFilesFolder+toFileName);
+     if NeedToProcess(FFilesFolder+toFileName, UserName) then
+       begin
+         AddLogLine(1, 'R', UserName, FFilesFolder+toFileName);
+         FFilesList.Add(FFilesFolder+toFileName);
+       end;
      FLastFile := toFileName;
      AnimateProgress();
    end;
@@ -451,18 +573,18 @@ begin
  // if archive process is active than twice the timer interval
  if Process.Active then
    begin
-     AddLogLine(0, 'D', 'Archive process is active, change archive interval to ' +
+     AddLogLine(0, 'D', ' ', 'Archive process is active, change archive interval to ' +
        IntToStr(Trunc(2 * tmrArchive.Interval / 60000)) + ' min');
      tmrArchive.Interval := 2 * tmrArchive.Interval;
    end;
  //  
  if (FFilesList.Count > 0) and not Process.Active then
    begin
-     AddLogLine(2, 'A', 'Start RAR for archiving');
+     AddLogLine(2, 'A', ' ', 'Start RAR for archiving');
      try
        FFilesList.SaveToFile(FArchivesFolder+'files.lst');
      except
-       AddLogLine(0, 'E', 'Can''t save file list in dest directory');
+       AddLogLine(0, 'E', ' ',  'Can''t save file list in dest directory');
        TrayIcon.IconList := ilError;
        TrayIcon.CycleIcons := True;
        Exit;
@@ -502,7 +624,7 @@ begin
       11 : Msg := Msg+ ' (Wrong password)';
      255 : Msg := Msg+ ' (User stopped the process)';
  end;
- AddLogLine(2, 'A', Msg);
+ AddLogLine(2, 'A', ' ', Msg);
 end;
 
 procedure TfrmMain.miShowHideClick(Sender: TObject);
@@ -541,6 +663,8 @@ procedure TfrmMain.hcLogSectionResize(HeaderControl: THeaderControl;
   Section: THeaderSection);
 begin
  redtLog.Tab[1] := hcLog.Sections[0].Width + hcLog.Sections[1].Width;
+ redtLog.Tab[2] := hcLog.Sections[0].Width + hcLog.Sections[1].Width + hcLog.Sections[2].Width;
+ redtLog.Tab[3] := redtLog.Tab[2];
  HideCaret(redtLog.Handle);
 end;
 

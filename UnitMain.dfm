@@ -234,6 +234,12 @@ object frmMain: TfrmMain
         Width = 60
       end
       item
+        ImageIndex = -1
+        MinWidth = 60
+        Text = 'User'
+        Width = 60
+      end
+      item
         AllowClick = False
         ImageIndex = -1
         Text = 'Description'
@@ -388,5 +394,9 @@ object frmMain: TfrmMain
     OnError = httpGetError
     Left = 144
     Top = 80
+  end
+  object XPManifest1: TXPManifest
+    Left = 48
+    Top = 112
   end
 end
